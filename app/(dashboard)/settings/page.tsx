@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Settings, Paintbrush, ToggleLeft, Sparkles, AlertTriangle, Loader2 } from "lucide-react"
+import { Settings, Paintbrush, ToggleLeft, Clock, Sparkles, AlertTriangle, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { BrandingTab } from "@/components/settings/branding-tab"
 import { AppearanceTab } from "@/components/settings/appearance-tab"
 import { FeaturesTab } from "@/components/settings/features-tab"
+import { OpeningHoursTab } from "@/components/settings/opening-hours-tab"
 import { useSettings } from "@/hooks/use-settings"
 import { Button } from "@/components/ui/button"
 import { pb } from "@/lib/pocketbase/client"
@@ -392,7 +393,7 @@ export default function SettingsPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -404,6 +405,10 @@ export default function SettingsPage() {
             <TabsTrigger value="features" className="flex items-center gap-2">
               <ToggleLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Funktionen</span>
+            </TabsTrigger>
+            <TabsTrigger value="opening-hours" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">Öffnungszeiten</span>
             </TabsTrigger>
           </TabsList>
 
@@ -417,6 +422,10 @@ export default function SettingsPage() {
 
           <TabsContent value="features">
             <FeaturesTab />
+          </TabsContent>
+
+          <TabsContent value="opening-hours">
+            <OpeningHoursTab />
           </TabsContent>
         </Tabs>
       </div>
