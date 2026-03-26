@@ -80,6 +80,8 @@ export function CreateBookingDialog({
   const [isSearching, setIsSearching] = useState(false);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [manualName, setManualName] = useState('');
 
   // Submission state
@@ -101,6 +103,8 @@ export function CreateBookingDialog({
       setResults([]);
       setCustomerId('');
       setCustomerName('');
+      setCustomerPhone('');
+      setCustomerEmail('');
       setManualName('');
       setErrors({});
     }
@@ -166,6 +170,8 @@ export function CreateBookingDialog({
   const handleSelectCustomer = (customer: Customer) => {
     setCustomerId(customer.id);
     setCustomerName(`${customer.firstname} ${customer.lastname}`);
+    setCustomerPhone(customer.phone || '');
+    setCustomerEmail(customer.email || '');
     setManualName('');
     setSearch('');
     setResults([]);
@@ -176,6 +182,8 @@ export function CreateBookingDialog({
     if (manualName.trim()) {
       setCustomerId('');
       setCustomerName(manualName.trim());
+      setCustomerPhone('');
+      setCustomerEmail('');
       setErrors((prev) => ({ ...prev, customer_name: '' }));
     }
   };
@@ -208,8 +216,8 @@ export function CreateBookingDialog({
         item: selectedItemId,
         customer: customerId || '',
         customer_name: customerName,
-        customer_phone: '',
-        customer_email: '',
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
         start_date: `${startDate} 00:00:00.000Z`,
         end_date: `${endDate} 00:00:00.000Z`,
         status: BookingStatus.Reserved,

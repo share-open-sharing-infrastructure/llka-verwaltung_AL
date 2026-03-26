@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateMonthDates, getBookingSpan, OVERFLOW_DAYS } from '../booking-grid';
+import { generateMonthDates, getBookingSpan } from '../booking-grid';
+import type { BookingExpanded } from '@/types';
 
 describe('generateMonthDates', () => {
   it('returns only main month dates when overflowDays=0', () => {
@@ -38,7 +39,7 @@ describe('getBookingSpan', () => {
   it('returns correct span for a booking within the date range', () => {
     const dates = generateMonthDates(2026, 2, 5);
     const slot = {
-      booking: {} as any,
+      booking: {} as unknown as BookingExpanded,
       columnKey: 'test',
       startDate: new Date(2026, 2, 5),
       endDate: new Date(2026, 2, 10),
@@ -51,7 +52,7 @@ describe('getBookingSpan', () => {
   it('returns span for a booking in overflow range', () => {
     const dates = generateMonthDates(2026, 2, 5);
     const slot = {
-      booking: {} as any,
+      booking: {} as unknown as BookingExpanded,
       columnKey: 'test',
       startDate: new Date(2026, 1, 24), // Feb 24 (first overflow day, index 0)
       endDate: new Date(2026, 2, 3),    // Mar 3

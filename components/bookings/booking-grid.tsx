@@ -336,8 +336,7 @@ export function BookingGrid({
         {/* Date rows */}
         {(() => {
           const firstMainIndex = dates.findIndex((d) => !d.isOverflow);
-          const lastMainIndex =
-            dates.length - 1 - [...dates].reverse().findIndex((d) => !d.isOverflow);
+          const lastMainIndex = dates.findLastIndex((d) => !d.isOverflow);
 
           return dates.map((gridDate, dateIndex) => {
             const { date, isOverflow } = gridDate;
