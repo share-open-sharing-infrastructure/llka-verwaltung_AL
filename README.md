@@ -131,6 +131,19 @@ Then, serve `out/` as static files.
 - `npm run test` - Run unit tests
 - `npm run test:e2e` - Run E2E tests
 
+## Settings
+
+The settings page (Konfiguration) includes four tabs:
+
+- **Branding** — App name, logo, favicon, copyright
+- **Darstellung** — Primary color, ID format
+- **Funktionen** — Feature toggles (e.g. reservations)
+- **Öffnungszeiten** — Opening hours per weekday
+
+Settings are stored in a PocketBase `settings` singleton collection. If the collection doesn't exist yet, the settings page offers to create it automatically.
+
+Opening hours configured here are used by leihbackend for reservation pickup validation and are also available via leihbackend's public `GET /api/opening-hours` endpoint.
+
 ## Development Guidelines
 
 ### Code Style
