@@ -182,6 +182,16 @@ const SETTINGS_COLLECTION_SCHEMA = {
     },
     {
       hidden: false,
+      id: "json4386729150",
+      maxSize: 2000000,
+      name: "opening_hours",
+      presentable: false,
+      required: false,
+      system: false,
+      type: "json"
+    },
+    {
+      hidden: false,
       id: "autodate2990389176",
       name: "created",
       onCreate: true,

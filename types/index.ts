@@ -759,6 +759,9 @@ export interface Settings extends BaseRecord {
 
   /** Tracks whether initial setup is complete */
   setup_complete: boolean;
+
+  /** Opening hours as array of [day, open, close] tuples */
+  opening_hours: [string, string, string][];
 }
 
 /**
@@ -792,6 +795,12 @@ export const DEFAULT_SETTINGS: Omit<Settings, keyof BaseRecord> = {
   id_padding: 0,
   reservations_enabled: true,
   setup_complete: false,
+  opening_hours: [
+    ['mon', '15:00', '19:00'],
+    ['thu', '15:00', '19:00'],
+    ['fri', '15:00', '19:00'],
+    ['sat', '10:00', '14:00'],
+  ],
 };
 
 // ============================================================================
