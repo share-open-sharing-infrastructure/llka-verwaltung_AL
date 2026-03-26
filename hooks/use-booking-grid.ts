@@ -11,13 +11,17 @@ import type { BookingExpanded, Item } from '@/types';
 import {
   generateMonthDates,
   buildBookingGrid,
+  OVERFLOW_DAYS,
+  type GridDate,
   type ItemColumn,
   type BookingSlot,
 } from '@/lib/utils/booking-grid';
 
 interface UseBookingGridReturn {
-  /** All dates in the current month */
-  dates: Date[];
+  /** All dates in the current month (including overflow) */
+  dates: GridDate[];
+  /** Protected items (for create dialog) */
+  items: Item[];
   /** Item columns (one per item × copy) */
   columns: ItemColumn[];
   /** Bookings positioned in lanes */
@@ -49,7 +53,10 @@ export function useBookingGrid(): UseBookingGridReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [unsupported, setUnsupported] = useState(false);
 
-  const dates = useMemo(() => generateMonthDates(year, month), [year, month]);
+  const dates = useMemo(
+    () => generateMonthDates(year, month, OVERFLOW_DAYS),
+    [year, month]
+  );
   const { columns, bookingSlots } = useMemo(
     () => buildBookingGrid(items, bookings),
     [items, bookings]
@@ -59,11 +66,13 @@ export function useBookingGrid(): UseBookingGridReturn {
     setIsLoading(true);
     try {
       const pad = (n: number) => String(n).padStart(2, '0');
-      const lastDate = new Date(year, month + 1, 0).getDate();
-      const mm = pad(month + 1);
 
-      const firstDayStr = `${year}-${mm}-01 00:00:00.000Z`;
-      const lastDayStr = `${year}-${mm}-${pad(lastDate)} 23:59:59.999Z`;
+      // Expand range by overflow days
+      const rangeStart = new Date(year, month, 1 - OVERFLOW_DAYS);
+      const rangeEnd = new Date(year, month + 1, OVERFLOW_DAYS);
+
+      const firstDayStr = `${rangeStart.getFullYear()}-${pad(rangeStart.getMonth() + 1)}-${pad(rangeStart.getDate())} 00:00:00.000Z`;
+      const lastDayStr = `${rangeEnd.getFullYear()}-${pad(rangeEnd.getMonth() + 1)}-${pad(rangeEnd.getDate())} 23:59:59.999Z`;
 
       // Fetch protected items and bookings in parallel
       const [itemsResult, bookingsResult] = await Promise.all([
@@ -128,6 +137,7 @@ export function useBookingGrid(): UseBookingGridReturn {
   }, []);
 
   return {
+    items,
     dates,
     columns,
     bookingSlots,
