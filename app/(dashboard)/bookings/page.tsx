@@ -14,6 +14,7 @@ import { BookingGrid } from '@/components/bookings/booking-grid';
 import { CustomerPickerPopover } from '@/components/bookings/customer-picker-popover';
 import { BookingDetailPopover } from '@/components/bookings/booking-detail-popover';
 import { RentalDetailSheet } from '@/components/detail-sheets/rental-detail-sheet';
+import { CreateBookingDialog } from '@/components/bookings/create-booking-dialog';
 import { collections } from '@/lib/pocketbase/client';
 import { BookingStatus } from '@/types';
 import type { Booking, BookingExpanded, RentalExpanded, Customer } from '@/types';
@@ -53,6 +54,9 @@ export default function BookingsPage() {
     x: number;
     y: number;
   } | null>(null);
+
+  // Create booking dialog state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Rental sheet state (for converting bookings to rentals)
   const [rentalFromBooking, setRentalFromBooking] =
@@ -244,6 +248,7 @@ export default function BookingsPage() {
         onPrevMonth={grid.prevMonth}
         onNextMonth={grid.nextMonth}
         onToday={grid.goToToday}
+        onCreateNew={() => setCreateDialogOpen(true)}
       />
 
       {grid.isLoading ? (
@@ -290,6 +295,16 @@ export default function BookingsPage() {
             ? selectedBooking?.id
             : undefined
         }
+      />
+
+      <CreateBookingDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        items={grid.items}
+        onCreated={() => {
+          setCreateDialogOpen(false);
+          grid.refetch();
+        }}
       />
     </div>
   );
