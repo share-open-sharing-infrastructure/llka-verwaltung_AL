@@ -70,6 +70,13 @@ export async function refreshAuth(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Auth refresh error:', error);
+    // If the server explicitly rejected the token (401/403), it's revoked
+    // or expired — clear the local auth state so the app routes to /login
+    // instead of retrying indefinitely with a dead token.
+    const status = (error as { status?: number })?.status;
+    if (status === 401 || status === 403) {
+      pb.authStore.clear();
+    }
     return false;
   }
 }

@@ -58,9 +58,15 @@ export default function LoginPage() {
       return;
     }
 
-    // Validate URL format
+    // Validate URL format and restrict to http(s). `new URL()` alone accepts
+    // javascript:, data:, file: — any of which would turn a phishing link
+    // into credential exfiltration.
     try {
-      new URL(serverUrl);
+      const parsed = new URL(serverUrl);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        toast.error('Server-URL muss mit http:// oder https:// beginnen');
+        return;
+      }
     } catch {
       toast.error('Bitte geben Sie eine gültige Server-URL ein');
       return;

@@ -141,7 +141,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading } = useRequireAuth();
+  const { isAuthenticated, isLoading } = useRequireAuth();
 
   if (isLoading) {
     return (
@@ -152,6 +152,14 @@ export default function DashboardLayout({
         </div>
       </div>
     );
+  }
+
+  // Synchronous gate: if the auth check resolved to "not authenticated",
+  // render nothing while useRequireAuth's effect redirects to /login.
+  // Without this, the whole dashboard tree mounts and starts firing queries
+  // in the brief window before the redirect takes effect.
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
