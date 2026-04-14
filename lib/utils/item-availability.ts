@@ -69,11 +69,12 @@ export async function getItemAvailability(
     };
   } catch (error) {
     console.error('Error fetching item availability:', error);
-    // Return conservative defaults on error
+    // On error, be conservative: report 0 available so the UI refuses
+    // the rental rather than letting an operator proceed blind.
     return {
-      totalCopies: 1,
+      totalCopies: 0,
       rentedCopies: 0,
-      availableCopies: 1,
+      availableCopies: 0,
     };
   }
 }
@@ -162,12 +163,13 @@ export async function getMultipleItemAvailability(
     return availabilityMap;
   } catch (error) {
     console.error('Error fetching multiple item availability:', error);
-    // Return conservative defaults for all items
+    // On error, report 0 available for every requested item so callers
+    // refuse the rental instead of proceeding on stale/missing data.
     for (const itemId of itemIds) {
       availabilityMap.set(itemId, {
-        totalCopies: 1,
+        totalCopies: 0,
         rentedCopies: 0,
-        availableCopies: 1,
+        availableCopies: 0,
       });
     }
     return availabilityMap;

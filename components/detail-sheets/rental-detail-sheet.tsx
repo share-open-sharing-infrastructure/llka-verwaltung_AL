@@ -93,6 +93,18 @@ function isValidDate(date: Date | undefined): boolean {
   return !isNaN(date.getTime());
 }
 
+// Retry a promise-returning function once on failure. Used for best-effort
+// side-effects (closing the source reservation/booking after rental create)
+// where a transient network blip shouldn't leave orphaned records.
+async function retry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return fn();
+  }
+}
+
 function dateToString(date: Date | undefined): string {
   if (!date || !isValidDate(date)) return '';
   return dateToLocalString(date);
@@ -611,14 +623,22 @@ export function RentalDetailSheet({
           return;
         }
 
-        // Validate copy counts against availability
+        // Re-fetch availability immediately before create. The cached
+        // map was loaded when the user opened the sheet; another operator
+        // may have rented the same copy since. This narrows (but can't
+        // eliminate) the TOCTOU window — true atomicity would need a
+        // PocketBase server hook.
+        const freshAvailability = await getMultipleItemAvailability(
+          items.map(item => item.id)
+        );
+
         for (const item of items) {
           const requestedCopies = getCopyCount(instanceData, item.id);
-          const availability = itemAvailability.get(item.id);
+          const availability = freshAvailability.get(item.id);
 
-          if (availability && requestedCopies > availability.availableCopies) {
+          if (!availability || requestedCopies > availability.availableCopies) {
             toast.error(
-              `${item.name} (#${String(item.iid).padStart(4, '0')}): Nur ${availability.availableCopies} von ${availability.totalCopies} Exemplaren verfügbar`
+              `${item.name} (#${String(item.iid).padStart(4, '0')}): Nur ${availability?.availableCopies ?? 0} von ${availability?.totalCopies ?? 0} Exemplaren verfügbar`
             );
             setIsLoading(false);
             return;
@@ -648,26 +668,32 @@ export function RentalDetailSheet({
         savedRental = await collections.rentals().create<Rental>(formData);
         toast.success('Leihvorgang erfolgreich erstellt');
 
-        // Mark source reservation as done after successful rental creation
+        // Mark source reservation as done after successful rental creation.
+        // Retry once on failure so a transient network blip doesn't leave the
+        // reservation open as "Offen" forever.
         if (sourceReservationId) {
           try {
-            await collections.reservations().update(sourceReservationId, { done: true });
+            await retry(() =>
+              collections.reservations().update(sourceReservationId, { done: true })
+            );
           } catch (err) {
             console.error('Error marking reservation as complete:', err);
-            toast.warning('Leihvorgang erstellt, aber Reservierung konnte nicht aktualisiert werden');
+            toast.warning('Leihvorgang erstellt, aber Reservierung konnte nicht aktualisiert werden — bitte manuell schließen');
           }
         }
 
-        // Mark source booking as active and link the rental
+        // Mark source booking as active and link the rental (same retry policy).
         if (sourceBookingId) {
           try {
-            await collections.bookings().update(sourceBookingId, {
-              status: 'active',
-              associated_rental: savedRental.id,
-            });
+            await retry(() =>
+              collections.bookings().update(sourceBookingId, {
+                status: 'active',
+                associated_rental: savedRental.id,
+              })
+            );
           } catch (err) {
             console.error('Error marking booking as active:', err);
-            toast.warning('Leihvorgang erstellt, aber Buchung konnte nicht aktualisiert werden');
+            toast.warning('Leihvorgang erstellt, aber Buchung konnte nicht aktualisiert werden — bitte manuell schließen');
           }
         }
       } else if (rental) {

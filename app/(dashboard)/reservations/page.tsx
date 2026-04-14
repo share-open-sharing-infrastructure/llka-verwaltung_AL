@@ -304,6 +304,15 @@ export default function ReservationsPage() {
     // Close reservation sheet
     setIsSheetOpen(false);
 
+    // Expected return defaults to 7 days from today, but if the reservation
+    // carries a pickup date and it's still in the future, honour it — that's
+    // the date the customer actually agreed to.
+    const defaultExpected = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const pickupDate = reservation.pickup ? new Date(reservation.pickup) : null;
+    const expectedOn = pickupDate && !isNaN(pickupDate.getTime()) && pickupDate.getTime() > Date.now()
+      ? pickupDate
+      : defaultExpected;
+
     // Create a template rental with data from reservation
     const templateRental: any = {
       id: "", // Empty ID indicates new rental
@@ -313,7 +322,7 @@ export default function ReservationsPage() {
       deposit_back: 0,
       rented_on: new Date().toISOString(),
       returned_on: "",
-      expected_on: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      expected_on: expectedOn.toISOString(),
       extended_on: "",
       remark: reservation.comments || "",
       employee: "",
