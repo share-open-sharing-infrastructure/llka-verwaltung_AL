@@ -114,9 +114,20 @@ export function useRealtimeSubscription<T extends BaseRecord>(
     // Subscribe to all records in the collection
     const topic = filter ? undefined : '*';
 
+    // `cancelled` guards against StrictMode's mount→unmount→mount double-fire:
+    // the first effect's cleanup runs while its subscribe() promise is still
+    // resolving, and without this guard the new mount's subscribe can race
+    // with the old mount's unsubscribe — leaving orphan listeners that fire
+    // events on a stale closure. Events received after cancellation are
+    // dropped; the unsubscribe resolves independently and gets called either
+    // way in the cleanup below.
+    let cancelled = false;
+
     const unsubscribe = pb.collection(collection).subscribe(
       topic || '*',
       async (event) => {
+        if (cancelled) return;
+
         // Log event in development only
         logRealtimeEvent(event as RealtimeEvent<T>, collection);
 
@@ -146,6 +157,7 @@ export function useRealtimeSubscription<T extends BaseRecord>(
 
     // Cleanup: unsubscribe when component unmounts or dependencies change
     return () => {
+      cancelled = true;
       unsubscribe.then(unsub => {
         if (typeof unsub === 'function') {
           unsub();
@@ -204,10 +216,14 @@ export function useRealtimeRecord<T extends BaseRecord>(
       return;
     }
 
+    // Same StrictMode race guard as useRealtimeSubscription above.
+    let cancelled = false;
+
     // Subscribe to specific record
     const unsubscribe = pb.collection(collection).subscribe(
       recordId,
       async (event) => {
+        if (cancelled) return;
         logRealtimeEvent(event as RealtimeEvent<T>, collection);
 
         const action = event.action;
@@ -223,6 +239,7 @@ export function useRealtimeRecord<T extends BaseRecord>(
     );
 
     return () => {
+      cancelled = true;
       unsubscribe.then(unsub => {
         if (typeof unsub === 'function') {
           unsub();

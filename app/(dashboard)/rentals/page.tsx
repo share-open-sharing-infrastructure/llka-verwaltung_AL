@@ -175,13 +175,6 @@ export default function RentalsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset pagination when search, filters, or sort change
-  useEffect(() => {
-    setRentals([]);
-    setCurrentPage(1);
-    setHasMore(true);
-  }, [debouncedSearch, filters.activeFilters, sortField]);
-
   const fetchRentals = useCallback(async (page: number) => {
     try {
       const isInitialLoad = page === 1;
@@ -225,18 +218,31 @@ export default function RentalsPage() {
     }
   }, [debouncedSearch, filters.buildFilter, sortField, perPage]);
 
-  // Initial load and reload on search change
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchRentals(1);
-  }, [debouncedSearch, fetchRentals]);
+  // Keep a stable ref to the latest fetchRentals so effects that want to
+  // call it don't need to depend on its identity (which changes whenever
+  // filters.buildFilter recomposes).
+  const fetchRef = useRef(fetchRentals);
+  fetchRef.current = fetchRentals;
 
-  // Intersection Observer for infinite scroll
+  // Reset + fetch in a single effect keyed on the actual inputs.
+  // Previously this was two effects (reset pagination, then fetch via
+  // fetchRentals-identity), which meant every filter-string mutation
+  // tore down and rebuilt the infinite-scroll observer below.
+  useEffect(() => {
+    setRentals([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchRef.current(1);
+  }, [debouncedSearch, filters.activeFilters, sortField]);
+
+  // Intersection Observer for infinite scroll. Depends only on pagination
+  // state — not fetchRentals identity — so it isn't recreated on every
+  // keystroke-after-debounce.
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
-          fetchRentals(currentPage);
+          fetchRef.current(currentPage);
         }
       },
       { threshold: 0.1 }
@@ -247,7 +253,7 @@ export default function RentalsPage() {
     }
 
     return () => observer.disconnect();
-  }, [fetchRentals, currentPage, hasMore, isLoading, isLoadingMore]);
+  }, [currentPage, hasMore, isLoading, isLoadingMore]);
 
   // Handle column sort
   const handleSort = (columnId: string) => {

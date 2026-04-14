@@ -133,13 +133,6 @@ export default function ItemsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset pagination when search, filters, or sort change
-  useEffect(() => {
-    setItems([]);
-    setCurrentPage(1);
-    setHasMore(true);
-  }, [debouncedSearch, filters.activeFilters, sortField]);
-
   const fetchItems = useCallback(async (page: number) => {
     try {
       const isInitialLoad = page === 1;
@@ -185,18 +178,24 @@ export default function ItemsPage() {
     }
   }, [debouncedSearch, filters.buildFilter, sortField, perPage]);
 
-  // Initial load and reload on search change
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchItems(1);
-  }, [debouncedSearch, fetchItems]);
+  // See rentals/page.tsx for the rationale behind this pattern: one effect
+  // keyed on the real inputs + a fetchRef so the observer below doesn't
+  // tear down and rebuild on every filter-string mutation.
+  const fetchRef = useRef(fetchItems);
+  fetchRef.current = fetchItems;
 
-  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    setItems([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchRef.current(1);
+  }, [debouncedSearch, filters.activeFilters, sortField]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
-          fetchItems(currentPage);
+          fetchRef.current(currentPage);
         }
       },
       { threshold: 0.1 }
@@ -207,7 +206,7 @@ export default function ItemsPage() {
     }
 
     return () => observer.disconnect();
-  }, [fetchItems, currentPage, hasMore, isLoading, isLoadingMore]);
+  }, [currentPage, hasMore, isLoading, isLoadingMore]);
 
   // Handle column sort
   const handleSort = (columnId: string) => {

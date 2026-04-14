@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { EntityColumnConfig } from '@/lib/tables/column-configs';
 
 export interface UseColumnVisibilityOptions {
@@ -23,59 +23,62 @@ export function useColumnVisibility({
   config,
   persist = true,
 }: UseColumnVisibilityOptions) {
-  // Initialize with default visible columns
-  const defaultVisibleColumns = config.columns
-    .filter((col) => col.defaultVisible)
-    .map((col) => col.id);
-
-  // Initialize with default column order (all columns in config order)
-  const defaultColumnOrder = config.columns.map((col) => col.id);
-
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultVisibleColumns);
-  const [columnOrder, setColumnOrder] = useState<string[]>(defaultColumnOrder);
-  const [verticalDividers, setVerticalDividers] = useState<boolean>(false);
-
   // Storage keys for this entity
   const visibilityStorageKey = `column_visibility_${entity}`;
   const orderStorageKey = `column_order_${entity}`;
   const dividersStorageKey = `vertical_dividers_${entity}`;
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    if (!persist) return;
+  // Default visible columns / column order, memoized so the reset* callbacks
+  // below have stable identity across renders.
+  const defaultVisibleColumns = useMemo(
+    () => config.columns.filter((col) => col.defaultVisible).map((col) => col.id),
+    [config.columns]
+  );
+  const defaultColumnOrder = useMemo(
+    () => config.columns.map((col) => col.id),
+    [config.columns]
+  );
 
+  // Load persisted state inside the useState initializers so we don't render
+  // once with defaults, write defaults, then overwrite with persisted values —
+  // that caused a brief flicker of the default column set and a redundant
+  // localStorage write on every mount.
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    if (!persist || typeof window === 'undefined') return defaultVisibleColumns;
     try {
-      // Load visibility
-      const storedVisibility = localStorage.getItem(visibilityStorageKey);
-      if (storedVisibility) {
-        const savedColumns = JSON.parse(storedVisibility) as string[];
-        setVisibleColumns(savedColumns);
-      }
-
-      // Load order
-      const storedOrder = localStorage.getItem(orderStorageKey);
-      if (storedOrder) {
-        const savedOrder = JSON.parse(storedOrder) as string[];
-        // Validate that saved order contains all current columns
-        const currentColumnIds = config.columns.map((col) => col.id);
-        const validOrder = savedOrder.filter((id) => currentColumnIds.includes(id));
-
-        // Add any new columns that aren't in saved order to the end
-        const missingColumns = currentColumnIds.filter((id) => !validOrder.includes(id));
-        const completeOrder = [...validOrder, ...missingColumns];
-
-        setColumnOrder(completeOrder);
-      }
-
-      // Load vertical dividers preference
-      const storedDividers = localStorage.getItem(dividersStorageKey);
-      if (storedDividers !== null) {
-        setVerticalDividers(JSON.parse(storedDividers) as boolean);
-      }
-    } catch (error) {
-      console.error('Failed to load column state from localStorage:', error);
+      const stored = localStorage.getItem(visibilityStorageKey);
+      return stored ? (JSON.parse(stored) as string[]) : defaultVisibleColumns;
+    } catch {
+      return defaultVisibleColumns;
     }
-  }, [visibilityStorageKey, orderStorageKey, dividersStorageKey, persist, config.columns]);
+  });
+
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (!persist || typeof window === 'undefined') return defaultColumnOrder;
+    try {
+      const stored = localStorage.getItem(orderStorageKey);
+      if (!stored) return defaultColumnOrder;
+      const savedOrder = JSON.parse(stored) as string[];
+      // Validate that saved order only contains current columns; append any
+      // new columns (added since last persist) to the end.
+      const currentColumnIds = config.columns.map((col) => col.id);
+      const validOrder = savedOrder.filter((id) => currentColumnIds.includes(id));
+      const missingColumns = currentColumnIds.filter((id) => !validOrder.includes(id));
+      return [...validOrder, ...missingColumns];
+    } catch {
+      return defaultColumnOrder;
+    }
+  });
+
+  const [verticalDividers, setVerticalDividers] = useState<boolean>(() => {
+    if (!persist || typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem(dividersStorageKey);
+      return stored !== null ? (JSON.parse(stored) as boolean) : false;
+    } catch {
+      return false;
+    }
+  });
 
   // Save visibility to localStorage when it changes
   useEffect(() => {

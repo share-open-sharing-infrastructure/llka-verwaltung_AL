@@ -2,7 +2,7 @@
  * Utility functions for fetching and computing item statistics
  */
 
-import { collections } from '@/lib/pocketbase/client';
+import { collections, pb } from '@/lib/pocketbase/client';
 import { differenceInDays, parseISO } from 'date-fns';
 import type { Item, ItemWithStats, Rental, ItemCategory } from '@/types';
 
@@ -77,15 +77,27 @@ export async function enrichItemsWithStats(
   }
 
   try {
-    // Build filter to get rentals for all item IDs using OR operator
-    // Note: items field in rentals is an array, so we use the ~ operator for "contains"
-    const itemFilters = items.map(i => `items~"${i.id}"`).join('||');
+    // Fetch in chunks so the OR-filter string never exceeds the URL length
+    // limit at large `items.length`. items field in rentals is an array, so
+    // we use the ~ operator for "contains".
+    const FILTER_CHUNK_SIZE = 100;
+    const chunks: Item[][] = [];
+    for (let i = 0; i < items.length; i += FILTER_CHUNK_SIZE) {
+      chunks.push(items.slice(i, i + FILTER_CHUNK_SIZE));
+    }
 
-    // Fetch all rentals for these items in one query
-    const rentals = await collections.rentals().getFullList<Rental>({
-      filter: itemFilters,
-      fields: 'id,items,rented_on,returned_on',
-    });
+    const rentalsByChunk = await Promise.all(
+      chunks.map((chunk) => {
+        const filter = chunk
+          .map((item, i) => pb.filter(`items ~ {:id${i}}`, { [`id${i}`]: item.id }))
+          .join(' || ');
+        return collections.rentals().getFullList<Rental>({
+          filter,
+          fields: 'id,items,rented_on,returned_on',
+        });
+      })
+    );
+    const rentals = rentalsByChunk.flat();
 
     // Create a map to aggregate stats per item
     const statsMap = new Map<string, {

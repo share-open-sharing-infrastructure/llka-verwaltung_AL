@@ -2,8 +2,13 @@
  * Utility functions for fetching and computing customer statistics
  */
 
-import { collections } from '@/lib/pocketbase/client';
+import { collections, pb } from '@/lib/pocketbase/client';
 import type { Customer, CustomerWithStats, CustomerRentals } from '@/types';
+
+// Max IDs per filter chunk. A big OR-chain in the filter string blows up
+// at the URL length limit around a few hundred IDs; chunking keeps each
+// request well below that even with room-to-spare margins.
+const FILTER_CHUNK_SIZE = 100;
 
 /**
  * Enriches an array of customers with their rental statistics
@@ -20,19 +25,31 @@ export async function enrichCustomersWithStats(
   }
 
   try {
-    // Build filter to get stats for all customer IDs
-    const customerIds = customers.map(c => `id='${c.id}'`).join('||');
+    // Fetch stats in chunks so the OR-filter string never exceeds a
+    // practical limit. Parallelises across chunks.
+    const chunks: Customer[][] = [];
+    for (let i = 0; i < customers.length; i += FILTER_CHUNK_SIZE) {
+      chunks.push(customers.slice(i, i + FILTER_CHUNK_SIZE));
+    }
 
-    // Fetch rental stats from the customer_rentals view
-    const statsRecords = await collections.customerRentals().getFullList<CustomerRentals>({
-      filter: customerIds,
-      fields: 'id,num_rentals,num_active_rentals',
-    });
+    const statsRecordsByChunk = await Promise.all(
+      chunks.map((chunk) => {
+        const filter = chunk
+          .map((c, i) => pb.filter(`id = {:id${i}}`, { [`id${i}`]: c.id }))
+          .join(' || ');
+        return collections.customerRentals().getFullList<CustomerRentals>({
+          filter,
+          fields: 'id,num_rentals,num_active_rentals',
+        });
+      })
+    );
 
-    // Create a map for quick lookup
+    // Flatten results and build map for quick lookup
     const statsMap = new Map<string, CustomerRentals>();
-    for (const stat of statsRecords) {
-      statsMap.set(stat.id, stat);
+    for (const statsRecords of statsRecordsByChunk) {
+      for (const stat of statsRecords) {
+        statsMap.set(stat.id, stat);
+      }
     }
 
     // Enrich customers with their stats
