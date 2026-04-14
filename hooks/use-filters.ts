@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ActiveFilter } from '@/lib/filters/filter-utils';
 import { buildPocketBaseFilter, generateFilterId } from '@/lib/filters/filter-utils';
 import type { EntityFilterConfig } from '@/lib/filters/filter-configs';
+import { pb } from '@/lib/pocketbase/client';
 
 export interface UseFiltersOptions {
   /** Entity type for localStorage key */
@@ -33,25 +34,13 @@ export function useFilters({ entity, config, persist = true, defaultFilters }: U
 
     try {
       const stored = localStorage.getItem(storageKey);
-      console.log(`[useFilters] Initializing filters for ${entity}:`, stored ? 'Found in localStorage' : 'Not in localStorage');
 
       if (stored) {
-        const filters = JSON.parse(stored) as ActiveFilter[];
-        console.log(`[useFilters] Loaded ${filters.length} filter(s) from localStorage`);
-        return filters;
+        return JSON.parse(stored) as ActiveFilter[];
       } else if (defaultFilters && defaultFilters.length > 0) {
-        // No saved filters - apply defaults
-        console.log(`[useFilters] Applying ${defaultFilters.length} default filter(s)`);
-        const filtersWithIds = defaultFilters.map(f => ({
-          ...f,
-          id: generateFilterId(f),
-        }));
-        console.log('[useFilters] Default filters with IDs:', filtersWithIds);
-        return filtersWithIds;
-      } else {
-        console.log('[useFilters] No filters to load (no localStorage, no defaults)');
-        return [];
+        return defaultFilters.map(f => ({ ...f, id: generateFilterId(f) }));
       }
+      return [];
     } catch (error) {
       console.error('Failed to load filters from localStorage:', error);
       return [];
@@ -137,6 +126,8 @@ export function useFilters({ entity, config, persist = true, defaultFilters }: U
         // Check if search term is numeric (with possible leading zeros)
         const numericMatch = searchTerm.match(/^0*(\d+)$/);
 
+        // field names come from trusted config; only the value (prefix/searchTerm/numericValue)
+        // is user input and must be parameterised via pb.filter.
         if (wildcardMatch) {
           // Wildcard IID search: e.g., 37** matches 3700-3799, 7** matches 700-799
           const prefix = wildcardMatch[1];
@@ -147,59 +138,45 @@ export function useFilters({ entity, config, persist = true, defaultFilters }: U
 
           config.searchFields.forEach((field) => {
             if (field === 'iid' || field.endsWith('.iid')) {
-              // Check if this is an array field (e.g., items.iid for rentals/reservations)
               const isArrayField = field.includes('.');
 
               if (isArrayField) {
-                // For array fields, we need to search within the array
-                // PocketBase doesn't support range queries on array fields directly,
-                // so we generate individual checks for each possible value in range
-                // For small ranges (< 100 values), enumerate them; otherwise, use text search on prefix
+                // For array fields, generate individual ?= checks for each value in range.
                 const rangeSize = maxValue - minValue + 1;
                 if (rangeSize <= 100) {
                   const values = Array.from({ length: rangeSize }, (_, i) => minValue + i);
+                  // minValue/maxValue are numbers derived from matched digits — safe.
                   const conditions = values.map(v => `${field} ?= ${v}`).join(' || ');
                   searchConditions.push(`(${conditions})`);
                 } else {
-                  // Range too large, fall back to text search on the field name
+                  // Range too large, fall back to text search on the field name.
                   const fieldParts = field.split('.');
                   const nameField = `${fieldParts[0]}.name`;
-                  searchConditions.push(`${nameField} ~ "${prefix}"`);
+                  searchConditions.push(pb.filter(`${nameField} ~ {:q}`, { q: prefix }));
                 }
               } else {
-                // For non-array iid fields, search by range
                 searchConditions.push(`(${field} >= ${minValue} && ${field} <= ${maxValue})`);
               }
             } else {
-              // For text fields, do text search with the prefix
-              searchConditions.push(`${field} ~ "${prefix}"`);
+              searchConditions.push(pb.filter(`${field} ~ {:q}`, { q: prefix }));
             }
           });
         } else if (numericMatch) {
-          // For numeric searches, add special handling for iid fields
-          const numericValue = numericMatch[1]; // Stripped of leading zeros
+          // For numeric searches, add special handling for iid fields.
+          const numericValue = parseInt(numericMatch[1], 10); // already regex-validated as digits
 
           config.searchFields.forEach((field) => {
             if (field === 'iid' || field.endsWith('.iid')) {
-              // Check if this is an array field (e.g., items.iid for rentals/reservations)
-              const isArrayField = field.includes('.');
-
-              if (isArrayField) {
-                // For array fields, use the ?= operator to check if any element matches
-                searchConditions.push(`${field} ?= ${numericValue}`);
-              } else {
-                // For non-array iid fields, use exact match
-                searchConditions.push(`${field} = ${numericValue}`);
-              }
+              const op = field.includes('.') ? '?=' : '=';
+              searchConditions.push(`${field} ${op} ${numericValue}`);
             } else {
-              // For text fields, still do text search with original term
-              searchConditions.push(`${field} ~ "${searchTerm}"`);
+              searchConditions.push(pb.filter(`${field} ~ {:q}`, { q: searchTerm }));
             }
           });
         } else {
-          // Non-numeric search: use text search for all fields
+          // Non-numeric search: use text search for all fields.
           config.searchFields.forEach((field) => {
-            searchConditions.push(`${field} ~ "${searchTerm}"`);
+            searchConditions.push(pb.filter(`${field} ~ {:q}`, { q: searchTerm }));
           });
         }
 
@@ -211,7 +188,7 @@ export function useFilters({ entity, config, persist = true, defaultFilters }: U
 
       return filterString;
     },
-    [activeFilters, config.searchFields]
+    [activeFilters, config.searchFields, entity]
   );
 
   /**

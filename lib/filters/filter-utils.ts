@@ -3,6 +3,7 @@
  */
 
 import { dateToLocalString } from '@/lib/utils/formatting';
+import { pb } from '@/lib/pocketbase/client';
 
 export interface ActiveFilter {
   id: string;
@@ -73,7 +74,7 @@ export function buildPocketBaseFilter(
                 break;
             }
           } else {
-            fieldParts.push(`${filter.field} = '${filter.value}'`);
+            fieldParts.push(pb.filter(`${filter.field} = {:v}`, { v: filter.value }));
           }
           break;
 
@@ -81,17 +82,18 @@ export function buildPocketBaseFilter(
           if (filter.value === '__none__') {
             fieldParts.push(`(${filter.field} = '' || ${filter.field} = null)`);
           } else {
-            fieldParts.push(`${filter.field} = '${filter.value}'`);
+            fieldParts.push(pb.filter(`${filter.field} = {:v}`, { v: filter.value }));
           }
           break;
 
         case 'date':
           if (Array.isArray(filter.value)) {
             const [start, end] = filter.value;
-            // Append time suffixes to ensure datetime fields are correctly filtered
-            // Start of day: 00:00:00, End of day: 23:59:59
             fieldParts.push(
-              `(${filter.field} >= '${start} 00:00:00' && ${filter.field} <= '${end} 23:59:59')`
+              pb.filter(`${filter.field} >= {:start} && ${filter.field} <= {:end}`, {
+                start: `${start} 00:00:00`,
+                end: `${end} 23:59:59`,
+              })
             );
           }
           break;
@@ -100,15 +102,16 @@ export function buildPocketBaseFilter(
           if (Array.isArray(filter.value)) {
             const [min, max] = filter.value;
             fieldParts.push(
-              `(${filter.field} >= ${min} && ${filter.field} <= ${max})`
+              pb.filter(`${filter.field} >= {:min} && ${filter.field} <= {:max}`, { min, max })
             );
           } else if (filter.operator) {
-            fieldParts.push(`${filter.field} ${filter.operator} ${filter.value}`);
+            // operator is restricted to a small set (see excluded-inversion below); safe to inline.
+            fieldParts.push(pb.filter(`${filter.field} ${filter.operator} {:v}`, { v: filter.value }));
           }
           break;
 
         case 'text':
-          fieldParts.push(`${filter.field} ~ '${filter.value}'`);
+          fieldParts.push(pb.filter(`${filter.field} ~ {:v}`, { v: filter.value }));
           break;
       }
     });
@@ -157,7 +160,7 @@ export function buildPocketBaseFilter(
               break;
           }
         } else {
-          filterParts.push(`${filter.field} != '${filter.value}'`);
+          filterParts.push(pb.filter(`${filter.field} != {:v}`, { v: filter.value }));
         }
         break;
 
@@ -166,16 +169,18 @@ export function buildPocketBaseFilter(
           // Exclude items WITHOUT category = must HAVE a category
           filterParts.push(`(${filter.field} != '' && ${filter.field} != null)`);
         } else {
-          filterParts.push(`${filter.field} != '${filter.value}'`);
+          filterParts.push(pb.filter(`${filter.field} != {:v}`, { v: filter.value }));
         }
         break;
 
       case 'date':
         if (Array.isArray(filter.value)) {
           const [start, end] = filter.value;
-          // Items OUTSIDE this date range (with time suffixes for datetime fields)
           filterParts.push(
-            `(${filter.field} < '${start} 00:00:00' || ${filter.field} > '${end} 23:59:59')`
+            pb.filter(`${filter.field} < {:start} || ${filter.field} > {:end}`, {
+              start: `${start} 00:00:00`,
+              end: `${end} 23:59:59`,
+            })
           );
         }
         break;
@@ -183,12 +188,10 @@ export function buildPocketBaseFilter(
       case 'numeric':
         if (Array.isArray(filter.value)) {
           const [min, max] = filter.value;
-          // Items OUTSIDE this numeric range
           filterParts.push(
-            `(${filter.field} < ${min} || ${filter.field} > ${max})`
+            pb.filter(`${filter.field} < {:min} || ${filter.field} > {:max}`, { min, max })
           );
         } else if (filter.operator) {
-          // Invert the operator
           const invertedOp = filter.operator === '=' ? '!=' :
                            filter.operator === '!=' ? '=' :
                            filter.operator === '>' ? '<=' :
@@ -196,13 +199,12 @@ export function buildPocketBaseFilter(
                            filter.operator === '>=' ? '<' :
                            filter.operator === '<=' ? '>' :
                            filter.operator;
-          filterParts.push(`${filter.field} ${invertedOp} ${filter.value}`);
+          filterParts.push(pb.filter(`${filter.field} ${invertedOp} {:v}`, { v: filter.value }));
         }
         break;
 
       case 'text':
-        // NOT containing text
-        filterParts.push(`${filter.field} !~ '${filter.value}'`);
+        filterParts.push(pb.filter(`${filter.field} !~ {:v}`, { v: filter.value }));
         break;
     }
   });

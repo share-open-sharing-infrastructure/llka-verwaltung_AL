@@ -244,7 +244,7 @@ export function ItemDetailSheet({
     try {
       // Load rentals that include this item
       const rentalsResult = await collections.rentals().getList<RentalExpanded>(1, 50, {
-        filter: `items~"${item.id}"`,
+        filter: pb.filter('items ~ {:id}', { id: item.id }),
         sort: '-rented_on',
         expand: 'customer,items',
       });

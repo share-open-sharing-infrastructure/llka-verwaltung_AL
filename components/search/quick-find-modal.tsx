@@ -23,7 +23,7 @@ import { CustomerDetailSheet } from '@/components/detail-sheets/customer-detail-
 import { ItemDetailSheet } from '@/components/detail-sheets/item-detail-sheet';
 import { RentalDetailSheet } from '@/components/detail-sheets/rental-detail-sheet';
 import { ReservationDetailSheet } from '@/components/detail-sheets/reservation-detail-sheet';
-import { collections } from '@/lib/pocketbase/client';
+import { collections, pb } from '@/lib/pocketbase/client';
 import type {
   Customer,
   Item,
@@ -91,16 +91,16 @@ export function QuickFindModal() {
           collections
             .customers()
             .getList<Customer>(1, 10, {
-              filter: `iid = ${iid}`,
+              filter: pb.filter('iid = {:iid}', { iid }),
             })
             .then((res) => res.items)
             .catch(() => []),
 
-          // Search items by IID
+          // Search items by IID (excluding soft-deleted)
           collections
             .items()
             .getList<Item>(1, 10, {
-              filter: `iid = ${iid}`,
+              filter: pb.filter('iid = {:iid} && status != "deleted"', { iid }),
             })
             .then((res) => res.items)
             .catch(() => []),
@@ -110,7 +110,7 @@ export function QuickFindModal() {
             .rentals()
             .getList<RentalExpanded>(1, 20, {
               expand: 'customer,items',
-              filter: `expand.customer.iid = ${iid} || expand.items.iid ?= ${iid}`,
+              filter: pb.filter('expand.customer.iid = {:iid} || expand.items.iid ?= {:iid}', { iid }),
               sort: '-created',
             })
             .then((res) => res.items)
@@ -121,7 +121,7 @@ export function QuickFindModal() {
             .reservations()
             .getList<ReservationExpanded>(1, 20, {
               expand: 'items',
-              filter: `customer_iid = ${iid} || expand.items.iid ?= ${iid}`,
+              filter: pb.filter('customer_iid = {:iid} || expand.items.iid ?= {:iid}', { iid }),
               sort: '-created',
             })
             .then((res) => res.items)

@@ -7,7 +7,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useCommandMenu } from '@/hooks/use-command-menu';
-import { collections } from '@/lib/pocketbase/client';
+import { collections, pb } from '@/lib/pocketbase/client';
 import type { Customer, Item, Reservation, RentalExpanded } from '@/types';
 import {
   Dialog,
@@ -86,14 +86,23 @@ export function GlobalCommandMenu() {
         const isNumeric = /^\d+$/.test(searchTerm);
         const numericIID = isNumeric ? parseInt(searchTerm, 10) : null;
 
-        // Build filter strings
+        // Build filter strings via pb.filter so user input is safely escaped.
         const customerFilter = isNumeric
-          ? `firstname ~ "${searchTerm}" || lastname ~ "${searchTerm}" || iid = ${numericIID}`
-          : `firstname ~ "${searchTerm}" || lastname ~ "${searchTerm}"`;
+          ? pb.filter('firstname ~ {:q} || lastname ~ {:q} || iid = {:iid}', { q: searchTerm, iid: numericIID })
+          : pb.filter('firstname ~ {:q} || lastname ~ {:q}', { q: searchTerm });
 
         const itemFilter = isNumeric
-          ? `name ~ "${searchTerm}" || brand ~ "${searchTerm}" || iid = ${numericIID}`
-          : `name ~ "${searchTerm}" || brand ~ "${searchTerm}"`;
+          ? pb.filter('(name ~ {:q} || brand ~ {:q} || iid = {:iid}) && status != "deleted"', { q: searchTerm, iid: numericIID })
+          : pb.filter('(name ~ {:q} || brand ~ {:q}) && status != "deleted"', { q: searchTerm });
+
+        const reservationFilter = isNumeric
+          ? pb.filter('customer_name ~ {:q} || customer_iid = {:iid}', { q: searchTerm, iid: numericIID })
+          : pb.filter('customer_name ~ {:q}', { q: searchTerm });
+
+        const rentalFilter = pb.filter(
+          'customer.firstname ~ {:q} || customer.lastname ~ {:q}',
+          { q: searchTerm }
+        );
 
         // Search in parallel
         const [customers, items, reservations, rentals] = await Promise.all([
@@ -107,7 +116,7 @@ export function GlobalCommandMenu() {
             .then((res) => res.items)
             .catch(() => []),
 
-          // Items: search by name, brand, iid
+          // Items: search by name, brand, iid (excluding soft-deleted)
           collections
             .items()
             .getList<Item>(1, 5, {
@@ -121,9 +130,7 @@ export function GlobalCommandMenu() {
           collections
             .reservations()
             .getList<Reservation>(1, 5, {
-              filter: isNumeric
-                ? `customer_name ~ "${searchTerm}" || customer_iid = ${numericIID}`
-                : `customer_name ~ "${searchTerm}"`,
+              filter: reservationFilter,
               sort: '-created',
               expand: 'items',
             })
@@ -134,7 +141,7 @@ export function GlobalCommandMenu() {
           collections
             .rentals()
             .getList<RentalExpanded>(1, 5, {
-              filter: `customer.firstname ~ "${searchTerm}" || customer.lastname ~ "${searchTerm}"`,
+              filter: rentalFilter,
               sort: '-created',
               expand: 'customer,items',
             })

@@ -2,7 +2,7 @@
  * Utilities for checking item copy availability across active rentals
  */
 
-import { collections } from '@/lib/pocketbase/client';
+import { collections, pb } from '@/lib/pocketbase/client';
 import type { Item, RentalExpanded } from '@/types';
 import { getCopyCount } from './instance-data';
 import { getReturnedCopyCount } from './partial-returns';
@@ -38,7 +38,7 @@ export async function getItemAvailability(
 
     // Fetch all rentals for this item (including partially returned ones)
     const activeRentals = await collections.rentals().getFullList<RentalExpanded>({
-      filter: `items ~ '${itemId}'`,
+      filter: pb.filter('items ~ {:id}', { id: itemId }),
       expand: 'items',
     });
 
@@ -99,7 +99,9 @@ export async function getMultipleItemAvailability(
   try {
     // Fetch all items at once
     const items = await collections.items().getFullList<Item>({
-      filter: itemIds.map(id => `id = '${id}'`).join(' || '),
+      filter: itemIds
+        .map((id, i) => pb.filter(`id = {:id${i}}`, { [`id${i}`]: id }))
+        .join(' || '),
     });
 
     // Create a map of item ID to total copies
@@ -110,7 +112,9 @@ export async function getMultipleItemAvailability(
 
     // Fetch all rentals that include any of these items (including partially returned)
     const activeRentals = await collections.rentals().getFullList<RentalExpanded>({
-      filter: `(${itemIds.map(id => `items ~ '${id}'`).join(' || ')})`,
+      filter: `(${itemIds
+        .map((id, i) => pb.filter(`items ~ {:id${i}}`, { [`id${i}`]: id }))
+        .join(' || ')})`,
       expand: 'items',
     });
 
