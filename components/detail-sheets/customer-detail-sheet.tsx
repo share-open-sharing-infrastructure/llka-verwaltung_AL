@@ -676,7 +676,7 @@ export function CustomerDetailSheet({
                                 endMonth={new Date(2030, 11)}
                                 onSelect={(date) => {
                                   if (date) {
-                                    form.setValue('registered_on', date.toISOString().slice(0, 10), { shouldDirty: true });
+                                    form.setValue('registered_on', dateToLocalString(date), { shouldDirty: true });
                                   }
                                   setRegisteredOnPickerOpen(false);
                                 }}
@@ -723,7 +723,7 @@ export function CustomerDetailSheet({
                                   endMonth={new Date(2030, 11)}
                                   onSelect={(date) => {
                                     if (date) {
-                                      form.setValue('renewed_on', date.toISOString().slice(0, 10), { shouldDirty: true });
+                                      form.setValue('renewed_on', dateToLocalString(date), { shouldDirty: true });
                                     }
                                     setRenewedOnPickerOpen(false);
                                   }}

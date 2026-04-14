@@ -20,6 +20,7 @@ import type { FilterConfig } from '@/lib/filters/filter-configs';
 import type { ActiveFilter } from '@/lib/filters/filter-utils';
 import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { dateToLocalString } from '@/lib/utils/formatting';
 
 /**
  * Get date range for quick filters
@@ -30,48 +31,41 @@ function getQuickDateRange(range: 'today' | 'yesterday' | 'this_week' | 'last_we
 
   switch (range) {
     case 'today': {
-      const start = new Date(today);
-      const end = new Date(today);
-      end.setHours(23, 59, 59, 999);
       return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0],
+        start: dateToLocalString(today),
+        end: dateToLocalString(today),
       };
     }
     case 'yesterday': {
-      const start = new Date(today);
-      start.setDate(start.getDate() - 1);
-      const end = new Date(start);
-      end.setHours(23, 59, 59, 999);
+      const day = new Date(today);
+      day.setDate(day.getDate() - 1);
       return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0],
+        start: dateToLocalString(day),
+        end: dateToLocalString(day),
       };
     }
     case 'this_week': {
       const start = new Date(today);
-      const day = start.getDay();
-      const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const dow = start.getDay();
+      const diff = start.getDate() - dow + (dow === 0 ? -6 : 1); // Monday
       start.setDate(diff);
       const end = new Date(start);
       end.setDate(end.getDate() + 6); // Sunday
-      end.setHours(23, 59, 59, 999);
       return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0],
+        start: dateToLocalString(start),
+        end: dateToLocalString(end),
       };
     }
     case 'last_week': {
       const start = new Date(today);
-      const day = start.getDay();
-      const diff = start.getDate() - day + (day === 0 ? -6 : 1) - 7; // Last Monday
+      const dow = start.getDay();
+      const diff = start.getDate() - dow + (dow === 0 ? -6 : 1) - 7; // Last Monday
       start.setDate(diff);
       const end = new Date(start);
       end.setDate(end.getDate() + 6); // Last Sunday
-      end.setHours(23, 59, 59, 999);
       return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0],
+        start: dateToLocalString(start),
+        end: dateToLocalString(end),
       };
     }
   }

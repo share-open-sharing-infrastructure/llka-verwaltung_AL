@@ -2,6 +2,8 @@
  * Filter utility functions
  */
 
+import { dateToLocalString } from '@/lib/utils/formatting';
+
 export interface ActiveFilter {
   id: string;
   type: 'status' | 'date' | 'category' | 'numeric' | 'text';
@@ -32,13 +34,6 @@ export function buildPocketBaseFilter(
   const includedFilters = filters.filter(f => !f.exclude);
   const excludedFilters = filters.filter(f => f.exclude);
 
-  console.log('[buildPocketBaseFilter] Processing filters:', {
-    total: filters.length,
-    included: includedFilters.length,
-    excluded: excludedFilters.length,
-    excludedFilters: excludedFilters.map(f => ({ field: f.field, value: f.value, exclude: f.exclude }))
-  });
-
   // ==================== Process INCLUDED filters ====================
   // Group included filters by field for OR logic on same field
   const includedByField = new Map<string, ActiveFilter[]>();
@@ -57,8 +52,8 @@ export function buildPocketBaseFilter(
         case 'status':
           // Handle computed rental status specially
           if (filter.field === '__rental_status__') {
-            const today = new Date().toISOString().split('T')[0];
-            const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const today = dateToLocalString(new Date());
+            const tomorrow = dateToLocalString(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
             switch (filter.value) {
               case 'active':
@@ -135,8 +130,8 @@ export function buildPocketBaseFilter(
       case 'status':
         // Handle computed rental status specially
         if (filter.field === '__rental_status__') {
-          const today = new Date().toISOString().split('T')[0];
-          const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const today = dateToLocalString(new Date());
+          const tomorrow = dateToLocalString(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
           // Exclude by inverting the logic
           switch (filter.value) {
@@ -212,9 +207,7 @@ export function buildPocketBaseFilter(
     }
   });
 
-  const finalFilter = filterParts.join(' && ');
-  console.log('[buildPocketBaseFilter] Final filter string:', finalFilter);
-  return finalFilter;
+  return filterParts.join(' && ');
 }
 
 /**

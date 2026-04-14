@@ -907,7 +907,7 @@ export function ItemDetailSheet({
                             endMonth={new Date(2030, 11)}
                             onSelect={(date) => {
                               if (date) {
-                                form.setValue('added_on', date.toISOString().slice(0, 10), { shouldDirty: true });
+                                form.setValue('added_on', dateToLocalString(date), { shouldDirty: true });
                               }
                               setAddedOnPickerOpen(false);
                             }}

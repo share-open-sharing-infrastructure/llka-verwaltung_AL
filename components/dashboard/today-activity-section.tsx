@@ -12,6 +12,7 @@ import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { useSettings } from '@/hooks/use-settings';
 import type { Rental, Customer, Reservation } from '@/types';
 import { toast } from 'sonner';
+import { dateToLocalString } from '@/lib/utils/formatting';
 
 interface TodayCounts {
   checkouts: number;
@@ -34,24 +35,30 @@ export function TodayActivitySection() {
     try {
       setLoading(true);
 
-      // Get today's date at midnight in local timezone, formatted for PocketBase
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().replace('T', ' ').substring(0, 19);
+      // Local-day boundaries. rented_on / returned_on / registered_on are
+      // date-only ("YYYY-MM-DD") — compare against local date strings.
+      // `created` is a UTC datetime — compare against the UTC range of the local day.
+      const localMidnight = new Date();
+      localMidnight.setHours(0, 0, 0, 0);
+      const tomorrowMidnight = new Date(localMidnight.getTime() + 24 * 60 * 60 * 1000);
+      const todayStr = dateToLocalString(localMidnight);
+      const tomorrowStr = dateToLocalString(tomorrowMidnight);
+      const createdStart = localMidnight.toISOString().replace('T', ' ').substring(0, 19);
+      const createdEnd = tomorrowMidnight.toISOString().replace('T', ' ').substring(0, 19);
 
       // Build queries array - only include reservations if enabled
       const queries = [
         // Rentals created today (checkouts)
         collections.rentals().getList(1, 1, {
-          filter: `rented_on >= '${todayStr}'`,
+          filter: `rented_on >= '${todayStr}' && rented_on < '${tomorrowStr}'`,
         }),
         // Returns today
         collections.rentals().getList(1, 1, {
-          filter: `returned_on >= '${todayStr}'`,
+          filter: `returned_on >= '${todayStr}' && returned_on < '${tomorrowStr}'`,
         }),
         // New customers registered today
         collections.customers().getList(1, 1, {
-          filter: `registered_on >= '${todayStr}'`,
+          filter: `registered_on >= '${todayStr}' && registered_on < '${tomorrowStr}'`,
         }),
       ];
 
@@ -59,7 +66,7 @@ export function TodayActivitySection() {
       if (settings.reservations_enabled) {
         queries.push(
           collections.reservations().getList(1, 1, {
-            filter: `created >= '${todayStr}'`,
+            filter: `created >= '${createdStart}' && created < '${createdEnd}'`,
           })
         );
       }
