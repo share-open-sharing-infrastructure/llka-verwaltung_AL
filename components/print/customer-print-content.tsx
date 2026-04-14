@@ -8,6 +8,7 @@ import { formatDate, formatCurrency } from '@/lib/utils/formatting';
 import type { Customer, RentalExpanded, ReservationExpanded } from '@/types';
 import { calculateRentalStatus } from '@/lib/utils/formatting';
 import { getRentalStatusLabel } from '@/lib/constants/statuses';
+import { escapeHtml } from '@/lib/utils/html-escape';
 
 interface CustomerPrintContentProps {
   customer: Customer;
@@ -69,12 +70,12 @@ export function generateCustomerPrintContent({
         <td style="padding: 8px 10px; border-bottom: 1px solid #333;">
           ${firstItem ? `
             <span style="font-family: monospace; font-weight: 600;">#${String(firstItem.iid).padStart(4, '0')}</span>
-            ${firstItem.name}
+            ${escapeHtml(firstItem.name)}
             ${additionalCount > 0 ? `<span style="font-size: 0.9em;"> +${additionalCount}</span>` : ''}
           ` : '—'}
         </td>
         <td style="padding: 8px 10px; border-bottom: 1px solid #333;">
-          ${reservation.comments || '—'}
+          ${reservation.comments ? escapeHtml(reservation.comments) : '—'}
         </td>
       </tr>
     `;
@@ -113,7 +114,7 @@ export function generateCustomerPrintContent({
     <html lang="de">
     <head>
       <meta charset="UTF-8">
-      <title>Nutzerdetails - ${customer.firstname} ${customer.lastname}</title>
+      <title>Nutzerdetails - ${escapeHtml(customer.firstname)} ${escapeHtml(customer.lastname)}</title>
       <style>
         * {
           box-sizing: border-box;
@@ -304,11 +305,11 @@ export function generateCustomerPrintContent({
       <div class="section">
         <div class="customer-box">
           <div class="customer-id">#${String(customer.iid).padStart(4, '0')}</div>
-          <div class="customer-name">${customer.firstname} ${customer.lastname}</div>
+          <div class="customer-name">${escapeHtml(customer.firstname)} ${escapeHtml(customer.lastname)}</div>
           <div class="customer-details">
-            ${customer.email ? `📧 ${customer.email}<br>` : ''}
-            ${customer.phone ? `📞 ${customer.phone}<br>` : ''}
-            ${customer.street ? `📍 ${customer.street}, ${customer.postal_code} ${customer.city}` : ''}
+            ${customer.email ? `📧 ${escapeHtml(customer.email)}<br>` : ''}
+            ${customer.phone ? `📞 ${escapeHtml(customer.phone)}<br>` : ''}
+            ${customer.street ? `📍 ${escapeHtml(customer.street)}, ${escapeHtml(customer.postal_code)} ${escapeHtml(customer.city)}` : ''}
           </div>
         </div>
 
@@ -341,7 +342,7 @@ export function generateCustomerPrintContent({
         <div class="section">
           <div class="note-box">
             <div class="note-label">⚠️ Wichtige Bemerkung:</div>
-            <div>${customer.remark}</div>
+            <div>${escapeHtml(customer.remark)}</div>
           </div>
         </div>
       ` : ''}

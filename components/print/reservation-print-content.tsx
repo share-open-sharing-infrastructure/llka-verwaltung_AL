@@ -5,6 +5,7 @@
  */
 
 import { formatDate, formatDateTime } from '@/lib/utils/formatting';
+import { escapeHtml } from '@/lib/utils/html-escape';
 import type { ReservationExpanded } from '@/types';
 
 /**
@@ -21,7 +22,7 @@ export function generateReservationPrintContent(
       const itemCount = reservation.items?.length || 0;
       const firstItem = reservation.expand?.items?.[0];
       const itemsText = firstItem
-        ? `${String(firstItem.iid).padStart(4, '0')} ${firstItem.name}${itemCount > 1 ? ` +${itemCount - 1}` : ''}`
+        ? `${String(firstItem.iid).padStart(4, '0')} ${escapeHtml(firstItem.name)}${itemCount > 1 ? ` +${itemCount - 1}` : ''}`
         : `${itemCount} ${itemCount === 1 ? 'Gegenstand' : 'Gegenstände'}`;
 
       return `
@@ -29,7 +30,7 @@ export function generateReservationPrintContent(
           <input type="checkbox" style="width: 16px; height: 16px; margin: 0;" />
 
           <div style="min-width: 160px; font-weight: 600;">
-            ${reservation.customer_name}
+            ${escapeHtml(reservation.customer_name)}
             ${
               reservation.is_new_customer
                 ? ` <span style="font-size: 8pt; padding: 0.125rem 0.375rem; background-color: #f3f4f6; border: 1px solid #999; border-radius: 0.25rem; font-weight: normal;">Neu</span>`
@@ -41,7 +42,7 @@ export function generateReservationPrintContent(
             reservation.otp
               ? `<div style="border: 1px solid #dc2626; background-color: #fee; border-radius: 0.25rem; padding: 0.25rem 0.5rem;">
                   <span style="font-family: 'Courier New', Courier, monospace; font-weight: 700; color: #dc2626; letter-spacing: 0.1em;">
-                    ${reservation.otp}
+                    ${escapeHtml(reservation.otp)}
                   </span>
                 </div>`
               : ''
@@ -53,7 +54,7 @@ export function generateReservationPrintContent(
 
           ${
             reservation.comments
-              ? `<div style="color: #666;" title="${reservation.comments.replace(/"/g, '&quot;')}">💬</div>`
+              ? `<div style="color: #666;" title="${escapeHtml(reservation.comments)}">💬</div>`
               : ''
           }
         </div>

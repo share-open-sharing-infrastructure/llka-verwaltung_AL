@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import { localStringToDate } from '@/lib/utils/formatting';
 import { getCopyCount, type InstanceData } from '@/lib/utils/instance-data';
 import { getReturnedCopyCount } from '@/lib/utils/partial-returns';
+import { escapeHtml } from '@/lib/utils/html-escape';
 import type { RentalExpanded, Customer, Item } from '@/types';
 
 interface RentalPrintContentProps {
@@ -61,9 +62,9 @@ export function generateRentalPrintContent({
           #${String(item.iid).padStart(4, '0')}
         </td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #333;">
-          <strong>${item.name}</strong>
-          ${item.brand ? `<br><span style="font-size: 0.9em;">Marke: ${item.brand}</span>` : ''}
-          ${item.model ? `<br><span style="font-size: 0.9em;">Modell: ${item.model}</span>` : ''}
+          <strong>${escapeHtml(item.name)}</strong>
+          ${item.brand ? `<br><span style="font-size: 0.9em;">Marke: ${escapeHtml(item.brand)}</span>` : ''}
+          ${item.model ? `<br><span style="font-size: 0.9em;">Modell: ${escapeHtml(item.model)}</span>` : ''}
         </td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #333; text-align: center;">
           ${copyCount}${hasCopies ? ' Stück' : ''}
@@ -242,11 +243,11 @@ export function generateRentalPrintContent({
         <div class="section-title">Nutzer:in</div>
         <div class="customer-box">
           <div class="customer-id">#${String(customer.iid).padStart(4, '0')}</div>
-          <div class="customer-name">${customer.firstname} ${customer.lastname}</div>
+          <div class="customer-name">${escapeHtml(customer.firstname)} ${escapeHtml(customer.lastname)}</div>
           <div class="customer-details">
-            ${customer.email ? `${customer.email}<br>` : ''}
-            ${customer.phone ? `Tel: ${customer.phone}<br>` : ''}
-            ${customer.street ? `${customer.street}, ${customer.postal_code} ${customer.city}` : ''}
+            ${customer.email ? `${escapeHtml(customer.email)}<br>` : ''}
+            ${customer.phone ? `Tel: ${escapeHtml(customer.phone)}<br>` : ''}
+            ${customer.street ? `${escapeHtml(customer.street)}, ${escapeHtml(customer.postal_code)} ${escapeHtml(customer.city)}` : ''}
           </div>
         </div>
       </div>
@@ -302,7 +303,7 @@ export function generateRentalPrintContent({
         <div class="section">
           <div class="note-box">
             <div class="note-label">Bemerkung:</div>
-            <div>${rental.remark}</div>
+            <div>${escapeHtml(rental.remark)}</div>
           </div>
         </div>
       ` : ''}
