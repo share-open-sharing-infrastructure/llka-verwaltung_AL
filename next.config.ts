@@ -7,7 +7,7 @@ const isGitHubPages = process.env.GITHUB_ACTIONS === 'true';
 const isDocker = process.env.DOCKER_BUILD === 'true';
 
 // GitHub Pages requires basePath when deploying to a repository subdirectory
-const basePath = process.env.BASE_PATH || (isProd && isGitHubPages ? '/llka-verwaltung' : '');
+const basePath = '/verwaltung';
 
 // Use 'standalone' for Docker builds, 'export' for GitHub Pages/static hosting
 const outputMode = isDocker ? 'standalone' : 'export';
