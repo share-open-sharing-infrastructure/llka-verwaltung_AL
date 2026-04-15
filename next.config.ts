@@ -37,9 +37,6 @@ const buildCommit = (() => {
 const nextConfig: NextConfig = {
   output: outputMode,
 
-  basePath,
-  assetPrefix: basePath,
-
   // Expose basePath + build metadata to client-side code.
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
