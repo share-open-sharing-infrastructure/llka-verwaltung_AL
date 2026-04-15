@@ -42,6 +42,7 @@ const nextConfig: NextConfig = {
   output: outputMode,
 
   basePath,
+  assetPrefix: basePath,
 
   // Expose basePath + build metadata to client-side code.
   env: {
