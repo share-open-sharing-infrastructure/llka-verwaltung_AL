@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 // GitHub Pages requires basePath when deploying to a repository subdirectory
 const basePath = '';
 
+//BASE_PATH = /verwaltung
+
 // Use 'standalone' for Docker builds, 'export' for GitHub Pages/static hosting
 const outputMode = 'export';
 
