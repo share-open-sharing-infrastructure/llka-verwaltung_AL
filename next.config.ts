@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-
 // GitHub Pages requires basePath when deploying to a repository subdirectory
 const basePath = '/verwaltung';
 
