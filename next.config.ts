@@ -36,7 +36,7 @@ const buildCommit = (() => {
 
 const nextConfig: NextConfig = {
   output: outputMode,
-
+  trailingSlash: true,
   basePath,
   assetPrefix: basePath,
 
