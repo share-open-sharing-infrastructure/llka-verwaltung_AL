@@ -26,7 +26,7 @@ jobs:
 
       - name: Build static export
         env:
-          BASE_PATH: ${{ secrets.UBERSPACE_BASE_PATH }}
+          BASE_PATH: ''
           NEXT_PUBLIC_POCKETBASE_URL: ${{ secrets.UBERSPACE_POCKETBASE_URL }}
         run: npm run build
 
