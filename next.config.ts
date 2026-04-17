@@ -3,9 +3,7 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 // GitHub Pages requires basePath when deploying to a repository subdirectory
-const basePath = '';
-
-//BASE_PATH = /verwaltung
+const basePath = '/verwaltung';
 
 // Use 'standalone' for Docker builds, 'export' for GitHub Pages/static hosting
 const outputMode = 'export';
@@ -40,6 +38,7 @@ const nextConfig: NextConfig = {
   output: outputMode,
 
   basePath,
+  assetPrefix: basePath,
 
   // Expose basePath + build metadata to client-side code.
   env: {
