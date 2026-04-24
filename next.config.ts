@@ -2,15 +2,11 @@ import type { NextConfig } from "next";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const isProd = process.env.NODE_ENV === 'production';
-const isGitHubPages = process.env.GITHUB_ACTIONS === 'true';
-const isDocker = process.env.DOCKER_BUILD === 'true';
-
 // GitHub Pages requires basePath when deploying to a repository subdirectory
-const basePath = process.env.BASE_PATH || (isProd && isGitHubPages ? '/llka-verwaltung' : '');
+const basePath = process.env.BASE_PATH;
 
 // Use 'standalone' for Docker builds, 'export' for GitHub Pages/static hosting
-const outputMode = isDocker ? 'standalone' : 'export';
+const outputMode = 'export';
 
 // Resolve build metadata (app version + short git commit) so we can show
 // it in the menu footer. Read package.json at config time rather than
@@ -40,8 +36,9 @@ const buildCommit = (() => {
 
 const nextConfig: NextConfig = {
   output: outputMode,
-
+  trailingSlash: true,
   basePath,
+  assetPrefix: basePath,
 
   // Expose basePath + build metadata to client-side code.
   env: {
