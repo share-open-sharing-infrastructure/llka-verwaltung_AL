@@ -1,0 +1,48 @@
+name: Build & Deploy to Uberspace
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static export
+        env:
+          BASE_PATH: ${{ secrets.UBERSPACE_BASE_PATH }}
+          NEXT_PUBLIC_POCKETBASE_URL: ${{ secrets.UBERSPACE_POCKETBASE_URL }}
+        run: npm run build
+
+      - name: Debug build output
+        run: |
+          ls -R out
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.UBERSPACE_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.UBERSPACE_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            ./out/ \
+            ${{ secrets.UBERSPACE_USER }}@${{ secrets.UBERSPACE_HOST }}:~/pocketbase/pb_public/backend
