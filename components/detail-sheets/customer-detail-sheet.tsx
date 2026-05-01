@@ -39,7 +39,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { collections } from '@/lib/pocketbase/client';
-import { formatDate, formatCurrency, calculateRentalStatus, dateToLocalString, localStringToDate } from '@/lib/utils/formatting';
+import { formatDate, formatCurrency, calculateRentalStatus, dateToLocalString, localStringToDate, formatLocalDateTime } from '@/lib/utils/formatting';
 import { getRentalStatusLabel } from '@/lib/constants/statuses';
 import { generateCustomerPrintContent } from '@/components/print/customer-print-content';
 import type { Customer, CustomerFormData, Rental, RentalExpanded, Reservation, ReservationExpanded, HighlightColor } from '@/types';
@@ -1004,7 +1004,7 @@ export function CustomerDetailSheet({
 
                           return (
                             <tr key={reservation.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                              <td className="px-3 py-2 font-medium">{formatDate(reservation.pickup)}</td>
+                              <td className="px-3 py-2 font-medium">{formatLocalDateTime(reservation.pickup, 'dd.MM.yyyy')}</td>
                               <td className="px-3 py-2">
                                 {firstItem ? (
                                   <div className="flex flex-wrap gap-1 items-center">

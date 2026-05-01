@@ -2,10 +2,26 @@
  * Formatting utilities for dates, currency, etc.
  */
 
-import { format, formatDistance, differenceInDays, parseISO } from 'date-fns';
+import { format, formatDistance, differenceInDays, parseISO, parse } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { RentalStatus, type Rental } from '@/types';
 import { getRentalReturnStatus } from './partial-returns';
+
+/**
+ * Format a "local time stored as UTC" datetime string.
+ * PocketBase returns these as "YYYY-MM-DD HH:mm:ss.sssZ" but the time
+ * is actually local — strip the Z to prevent timezone conversion.
+ */
+export function formatLocalDateTime(date: string, formatStr: string = 'dd.MM.yyyy HH:mm'): string {
+  try {
+    // Strip trailing Z and milliseconds to treat as local time
+    const stripped = date.replace(/\.000Z$/, '').replace(/Z$/, '');
+    const dateObj = parse(stripped, 'yyyy-MM-dd HH:mm:ss', new Date());
+    return format(dateObj, formatStr, { locale: de });
+  } catch {
+    return '';
+  }
+}
 
 /**
  * Format date to German locale

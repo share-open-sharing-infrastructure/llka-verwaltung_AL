@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { X, MapPin, Package, User, Clock } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { collections } from '@/lib/pocketbase/client';
-import { formatDateTime } from '@/lib/utils/formatting';
+import { formatLocalDateTime } from '@/lib/utils/formatting';
 import type { Reservation, ReservationExpanded } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -156,7 +156,7 @@ export function OnPremisesNotification() {
 
               <div className="flex items-center gap-2 text-sm text-white/90">
                 <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>Abholung: {formatDateTime(notification.pickup)}</span>
+                <span>Abholung: {formatLocalDateTime(notification.pickup)}</span>
               </div>
             </div>
 

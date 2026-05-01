@@ -56,7 +56,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { collections, pb } from "@/lib/pocketbase/client";
-import { formatDate, formatCurrency } from "@/lib/utils/formatting";
+import { formatDate, formatCurrency, formatLocalDateTime } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils";
 import type { Reservation, ReservationExpanded, Customer, Item } from "@/types";
 import { CustomerDetailSheet } from "./customer-detail-sheet";
@@ -64,12 +64,10 @@ import { FormHelpPanel } from "./form-help-panel";
 import { DOCUMENTATION } from "@/lib/constants/documentation";
 import { useHelpCollapsed } from "@/hooks/use-help-collapsed";
 import { FormattedId } from "@/components/ui/formatted-id";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 
-// Local-time helpers for datetime-local inputs — keep UTC conversion at DB boundaries only
+// Helper for datetime-local input default value (new reservations only)
 const toLocalInput = (d: Date) => format(d, "yyyy-MM-dd'T'HH:mm");
-const fromLocalInput = (s: string) =>
-  parse(s, "yyyy-MM-dd'T'HH:mm", new Date());
 
 // Validation schema
 const reservationSchema = z.object({
@@ -306,7 +304,7 @@ export function ReservationDetailSheet({
           customer_email: reservation.customer_email || "",
           is_new_customer: reservation.is_new_customer,
           item_ids: reservation.items,
-          pickup: toLocalInput(new Date(reservation.pickup)), // UTC ISO → local datetime-local
+          pickup: reservation.pickup.slice(0, 16).replace(" ", "T"), // "YYYY-MM-DD HH:mm:ss" → "YYYY-MM-DDTHH:mm" (no TZ conversion)
           comments: reservation.comments || "",
           done: reservation.done,
           on_premises: reservation.on_premises,
@@ -362,9 +360,10 @@ export function ReservationDetailSheet({
         return;
       }
 
-      // Convert datetime-local (local time) → UTC ISO 8601 for DB storage
-      const pickupDate = fromLocalInput(data.pickup);
-      const pickupISO = pickupDate.toISOString();
+      // Convert datetime-local to "YYYY-MM-DD HH:mm:ss" (no timezone)
+      // PocketBase stores datetimes as UTC, and the resomaker frontend also
+      // sends plain local times without timezone suffix, so we must stay consistent.
+      const pickupFormatted = data.pickup.replace("T", " ") + ":00";
 
       const formData: Partial<Reservation> = {
         customer_iid: data.is_new_customer ? undefined : data.customer_iid,
@@ -373,7 +372,7 @@ export function ReservationDetailSheet({
         customer_email: data.customer_email || undefined,
         is_new_customer: data.is_new_customer,
         items: data.item_ids,
-        pickup: pickupISO,
+        pickup: pickupFormatted,
         comments: data.comments || undefined,
         done: data.done,
         on_premises: data.on_premises,
@@ -531,7 +530,7 @@ export function ReservationDetailSheet({
                 </div>
                 {!isNewReservation && reservation && (
                   <div className="flex gap-2 text-sm text-muted-foreground">
-                    <span>Abholung: {formatDate(reservation.pickup)}</span>
+                    <span>Abholung: {formatLocalDateTime(reservation.pickup)}</span>
                   </div>
                 )}
               </div>

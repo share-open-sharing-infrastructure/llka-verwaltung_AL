@@ -4,7 +4,7 @@
  * Follows print standards: no fills, borders/outlines only, proper margins
  */
 
-import { formatDate, formatCurrency } from '@/lib/utils/formatting';
+import { formatDate, formatCurrency, formatLocalDateTime } from '@/lib/utils/formatting';
 import type { Customer, RentalExpanded, ReservationExpanded } from '@/types';
 import { calculateRentalStatus } from '@/lib/utils/formatting';
 import { getRentalStatusLabel } from '@/lib/constants/statuses';
@@ -65,7 +65,7 @@ export function generateCustomerPrintContent({
     return `
       <tr>
         <td style="padding: 8px 10px; border-bottom: 1px solid #333;">
-          ${formatDate(reservation.pickup)}
+          ${formatLocalDateTime(reservation.pickup, 'dd.MM.yyyy')}
         </td>
         <td style="padding: 8px 10px; border-bottom: 1px solid #333;">
           ${firstItem ? `

@@ -40,7 +40,7 @@ import type {
   RentalExpanded,
   Customer,
 } from "@/types";
-import { formatDateTime } from "@/lib/utils/formatting";
+import { formatLocalDateTime } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils";
 import { FormattedId } from "@/components/ui/formatted-id";
 
@@ -558,7 +558,7 @@ export default function ReservationsPage() {
       case "pickup":
         return (
           <td key="pickup" className={cn("px-4 py-3 text-sm text-muted-foreground", dividerClass)}>
-            {formatDateTime(reservation.pickup)}
+            {formatLocalDateTime(reservation.pickup)}
           </td>
         );
       case "status":
