@@ -173,6 +173,9 @@ export interface Customer extends BaseRecord {
   /** Street address */
   street?: string;
 
+  /** House number */
+  house_number?: string;
+
   /** Postal code */
   postal_code?: string;
 
@@ -227,6 +230,7 @@ export interface CustomerFormData {
   email?: string;
   phone?: string;
   street?: string;
+  house_number?: string;
   postal_code?: string;
   city?: string;
   registered_on: Date;

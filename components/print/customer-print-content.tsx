@@ -309,7 +309,7 @@ export function generateCustomerPrintContent({
           <div class="customer-details">
             ${customer.email ? `📧 ${escapeHtml(customer.email)}<br>` : ''}
             ${customer.phone ? `📞 ${escapeHtml(customer.phone)}<br>` : ''}
-            ${customer.street ? `📍 ${escapeHtml(customer.street)}, ${escapeHtml(customer.postal_code)} ${escapeHtml(customer.city)}` : ''}
+            ${customer.street ? `📍 ${escapeHtml(customer.street)}${customer.house_number ? ` ${escapeHtml(customer.house_number)}` : ''}, ${escapeHtml(customer.postal_code)} ${escapeHtml(customer.city)}` : ''}
           </div>
         </div>
 
