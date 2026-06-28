@@ -60,9 +60,10 @@ const customerSchema = z.object({
     .optional()
     .or(z.literal('')),
   phone: z.string().optional().or(z.literal('')),
-  street: z.string().optional(),
-  postal_code: z.string().optional(),
-  city: z.string().optional(),
+  street: z.string().min(1, 'Straße ist erforderlich'),
+  house_number: z.string().min(1, 'Hausnummer ist erforderlich'),
+  postal_code: z.string().min(1, 'PLZ ist erforderlich'),
+  city: z.string().min(1, 'Stadt ist erforderlich'),
   registered_on: z.string(),
   renewed_on: z.string().optional(),
   newsletter: z.boolean(),
@@ -111,6 +112,7 @@ export function CustomerDetailSheet({
       email: '',
       phone: '',
       street: '',
+      house_number: '',
       postal_code: '',
       city: '',
       registered_on: dateToLocalString(new Date()),
@@ -134,6 +136,7 @@ export function CustomerDetailSheet({
         email: customer.email || '',
         phone: customer.phone || '',
         street: customer.street || '',
+        house_number: customer.house_number || '',
         postal_code: customer.postal_code || '',
         city: customer.city || '',
         // Extract just the date part (YYYY-MM-DD) from PocketBase format (YYYY-MM-DD HH:MM:SS.000Z)
@@ -161,6 +164,7 @@ export function CustomerDetailSheet({
             email: customer.email || '',
             phone: customer.phone || '',
             street: customer.street || '',
+            house_number: customer.house_number || '',
             postal_code: customer.postal_code || '',
             city: customer.city || '',
             registered_on: dateToLocalString(new Date()),
@@ -188,6 +192,7 @@ export function CustomerDetailSheet({
             email: '',
             phone: '',
             street: '',
+            house_number: '',
             postal_code: '',
             city: '',
             registered_on: dateToLocalString(new Date()),
@@ -205,6 +210,7 @@ export function CustomerDetailSheet({
             email: '',
             phone: '',
             street: '',
+            house_number: '',
             postal_code: '',
             city: '',
             registered_on: dateToLocalString(new Date()),
@@ -263,9 +269,10 @@ export function CustomerDetailSheet({
         lastname: data.lastname,
         email: data.email,
         phone: data.phone,
-        street: data.street || undefined,
-        postal_code: data.postal_code || undefined,
-        city: data.city || undefined,
+        street: data.street,
+        house_number: data.house_number,
+        postal_code: data.postal_code,
+        city: data.city,
         registered_on: data.registered_on,
         renewed_on: data.renewed_on || undefined,
         newsletter: data.newsletter,
@@ -285,6 +292,7 @@ export function CustomerDetailSheet({
           email: '',
           phone: '',
           street: '',
+          house_number: '',
           postal_code: '',
           city: '',
           registered_on: dateToLocalString(new Date()),
@@ -586,7 +594,7 @@ export function CustomerDetailSheet({
                       </div>
 
                       <div>
-                        <Label htmlFor="phone">Telefon *</Label>
+                        <Label htmlFor="phone">Telefon</Label>
                         <Input
                           id="phone"
                           {...form.register('phone')}
@@ -608,32 +616,61 @@ export function CustomerDetailSheet({
                     <MapPinIcon className="size-4 text-muted-foreground" />
                     <h3 className="font-semibold text-base">Adresse</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <Label htmlFor="street">Straße</Label>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="col-span-3">
+                      <Label htmlFor="street">Straße *</Label>
                       <Input
                         id="street"
                         {...form.register('street')}
                         className="mt-1.5"
                       />
+                      {form.formState.errors.street && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.street.message}
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <Label htmlFor="postal_code">PLZ</Label>
+                      <Label htmlFor="house_number">Nr. *</Label>
+                      <Input
+                        id="house_number"
+                        {...form.register('house_number')}
+                        className="mt-1.5"
+                      />
+                      {form.formState.errors.house_number && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.house_number.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="postal_code">PLZ *</Label>
                       <Input
                         id="postal_code"
                         {...form.register('postal_code')}
                         className="mt-1.5"
                       />
+                      {form.formState.errors.postal_code && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.postal_code.message}
+                        </p>
+                      )}
                     </div>
 
-                    <div>
-                      <Label htmlFor="city">Stadt</Label>
+                    <div className="col-span-3">
+                      <Label htmlFor="city">Stadt *</Label>
                       <Input
                         id="city"
                         {...form.register('city')}
                         className="mt-1.5"
                       />
+                      {form.formState.errors.city && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.city.message}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </section>
@@ -917,7 +954,7 @@ export function CustomerDetailSheet({
                   <section>
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        [customer?.street, customer?.postal_code, customer?.city].filter(Boolean).join(', ')
+                        [customer?.street && customer?.house_number ? `${customer.street} ${customer.house_number}` : customer?.street, customer?.postal_code, customer?.city].filter(Boolean).join(', ')
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -926,7 +963,7 @@ export function CustomerDetailSheet({
                       <div className="flex items-start gap-3">
                         <MapPinIcon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="text-base">
-                          {customer?.street && <div>{customer.street}</div>}
+                          {customer?.street && <div>{customer.street}{customer.house_number ? ` ${customer.house_number}` : ''}</div>}
                           {(customer?.postal_code || customer?.city) && (
                             <div>{customer?.postal_code} {customer?.city}</div>
                           )}
