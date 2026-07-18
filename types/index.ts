@@ -489,6 +489,9 @@ export interface Reservation extends BaseRecord {
   /** Item ID references */
   items: string[];
 
+  /** Number of copies requested per item ID (defaults to 1 if absent) */
+  requested_copies?: Record<string, number>;
+
   /** Pickup date/time */
   pickup: string;
 

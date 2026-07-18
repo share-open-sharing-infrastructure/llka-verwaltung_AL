@@ -128,6 +128,7 @@ export function ReservationDetailSheet({
   const [itemSearch, setItemSearch] = useState("");
   const [itemResults, setItemResults] = useState<Item[]>([]);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
+  const [requestedCopies, setRequestedCopies] = useState<Record<string, number>>({});
   const [itemSearchOpen, setItemSearchOpen] = useState(false);
   const [isSearchingItems, setIsSearchingItems] = useState(false);
 
@@ -297,6 +298,8 @@ export function ReservationDetailSheet({
           setSelectedItems([]);
         }
 
+        setRequestedCopies(reservation.requested_copies || {});
+
         form.reset({
           customer_iid: reservation.customer_iid || undefined,
           customer_name: reservation.customer_name,
@@ -313,6 +316,7 @@ export function ReservationDetailSheet({
         // Reset for new reservation
         setSelectedCustomer(null);
         setSelectedItems([]);
+        setRequestedCopies({});
 
         form.reset({
           customer_iid: undefined,
@@ -372,6 +376,7 @@ export function ReservationDetailSheet({
         customer_email: data.customer_email || undefined,
         is_new_customer: data.is_new_customer,
         items: data.item_ids,
+        requested_copies: requestedCopies,
         pickup: pickupFormatted,
         comments: data.comments || undefined,
         done: data.done,
@@ -466,6 +471,11 @@ export function ReservationDetailSheet({
       newSelectedItems.map((i) => i.id),
       { shouldDirty: true },
     );
+    setRequestedCopies((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
   };
 
   const handleCreateCustomer = () => {
@@ -910,6 +920,23 @@ export function ReservationDetailSheet({
                                   {formatCurrency(item.deposit)}
                                 </span>
                               </div>
+                              {item.copies > 1 && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className="text-xs text-muted-foreground">Exemplare:</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={item.copies}
+                                    value={requestedCopies[item.id] ?? 1}
+                                    onChange={(e) => {
+                                      const val = Math.min(Math.max(1, parseInt(e.target.value) || 1), item.copies);
+                                      setRequestedCopies((prev) => ({ ...prev, [item.id]: val }));
+                                    }}
+                                    className="w-16 h-7 rounded border border-input bg-background px-2 text-sm text-center"
+                                  />
+                                  <span className="text-xs text-muted-foreground">von {item.copies}</span>
+                                </div>
+                              )}
                             </div>
                             <Button
                               type="button"
