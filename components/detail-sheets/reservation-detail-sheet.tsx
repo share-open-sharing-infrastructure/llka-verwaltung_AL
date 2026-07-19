@@ -129,6 +129,9 @@ export function ReservationDetailSheet({
   const [itemResults, setItemResults] = useState<Item[]>([]);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   const [requestedCopies, setRequestedCopies] = useState<Record<string, number>>({});
+  // Tracked separately because requestedCopies lives outside react-hook-form
+  // and must still trigger the "discard changes?" guard.
+  const [copiesDirty, setCopiesDirty] = useState(false);
   const [itemSearchOpen, setItemSearchOpen] = useState(false);
   const [isSearchingItems, setIsSearchingItems] = useState(false);
 
@@ -298,7 +301,22 @@ export function ReservationDetailSheet({
           setSelectedItems([]);
         }
 
-        setRequestedCopies(reservation.requested_copies || {});
+        // Prune copies for items no longer on the reservation and clamp to the
+        // item's current copy count (it may have been reduced since saving).
+        const storedCopies = reservation.requested_copies || {};
+        const expandedItems = reservation.expand?.items || [];
+        const cleanedCopies: Record<string, number> = {};
+        for (const itemId of reservation.items) {
+          const stored = storedCopies[itemId];
+          if (stored === undefined) continue;
+          const item = expandedItems.find((i) => i.id === itemId);
+          cleanedCopies[itemId] = Math.min(
+            Math.max(1, stored),
+            item?.copies ?? stored,
+          );
+        }
+        setRequestedCopies(cleanedCopies);
+        setCopiesDirty(false);
 
         form.reset({
           customer_iid: reservation.customer_iid || undefined,
@@ -317,6 +335,7 @@ export function ReservationDetailSheet({
         setSelectedCustomer(null);
         setSelectedItems([]);
         setRequestedCopies({});
+        setCopiesDirty(false);
 
         form.reset({
           customer_iid: undefined,
@@ -409,7 +428,7 @@ export function ReservationDetailSheet({
   };
 
   const handleCancel = () => {
-    if (isDirty) {
+    if (isDirty || copiesDirty) {
       setShowCancelDialog(true);
     } else {
       onOpenChange(false);
@@ -419,6 +438,7 @@ export function ReservationDetailSheet({
   const handleConfirmCancel = () => {
     setShowCancelDialog(false);
     form.reset();
+    setCopiesDirty(false);
     onOpenChange(false);
   };
 
@@ -513,7 +533,7 @@ export function ReservationDetailSheet({
       <Sheet
         open={open}
         onOpenChange={(open) => {
-          if (!open && isDirty) {
+          if (!open && (isDirty || copiesDirty)) {
             setShowCancelDialog(true);
           } else {
             onOpenChange(open);
@@ -929,7 +949,10 @@ export function ReservationDetailSheet({
                                     max={item.copies}
                                     value={requestedCopies[item.id] ?? 1}
                                     onChange={(e) => {
-                                      const val = Math.min(Math.max(1, parseInt(e.target.value) || 1), item.copies);
+                                      const val = Math.min(Math.max(1, parseInt(e.target.value, 10) || 1), item.copies);
+                                      if (val !== (requestedCopies[item.id] ?? 1)) {
+                                        setCopiesDirty(true);
+                                      }
                                       setRequestedCopies((prev) => ({ ...prev, [item.id]: val }));
                                     }}
                                     className="w-16 h-7 rounded border border-input bg-background px-2 text-sm text-center"
