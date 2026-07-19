@@ -121,7 +121,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           id_padding: rawSettings.id_padding,
           reservations_enabled: rawSettings.reservations_enabled,
           setup_complete: rawSettings.setup_complete,
-          opening_hours: rawSettings.opening_hours,
+          opening_hours: rawSettings.opening_hours ?? DEFAULT_SETTINGS.opening_hours,
         }
       : {}),
   }), [rawSettings]);
@@ -302,7 +302,7 @@ export function usePublicSettings() {
             id_padding: record.id_padding,
             reservations_enabled: record.reservations_enabled,
             setup_complete: record.setup_complete,
-            opening_hours: record.opening_hours,
+            opening_hours: record.opening_hours ?? DEFAULT_SETTINGS.opening_hours,
           });
         }
       } catch (error) {

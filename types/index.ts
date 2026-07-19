@@ -775,7 +775,8 @@ export const DEFAULT_SETTINGS: Omit<Settings, keyof BaseRecord> = {
   reservations_enabled: true,
   setup_complete: false,
   opening_hours: [
-    ['sun', '11:00', '15:00'],
+    ['wed', '17:00', '21:00'],
+    ['sat', '11:00', '15:00'],
   ],
 };
 
