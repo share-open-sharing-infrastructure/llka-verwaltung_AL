@@ -421,7 +421,29 @@ export function ReservationDetailSheet({
       onOpenChange(false);
     } catch (err) {
       console.error("Error saving reservation:", err);
-      toast.error("Fehler beim Speichern der Reservierung");
+
+      // Extract error message from PocketBase response
+      let errorMessage = "Fehler beim Speichern der Reservierung";
+
+      if (err && typeof err === "object") {
+        // PocketBase error with message property
+        if ("message" in err && typeof err.message === "string") {
+          errorMessage = err.message;
+        }
+        // PocketBase ClientResponseError with data.message
+        else if ("data" in err && err.data && typeof err.data === "object" && "message" in err.data) {
+          errorMessage = String(err.data.message);
+        }
+        // Response body with message (for 400 errors)
+        else if ("response" in err && err.response && typeof err.response === "object") {
+          const response = err.response as any;
+          if (response.data && response.data.message) {
+            errorMessage = response.data.message;
+          }
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
