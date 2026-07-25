@@ -1165,10 +1165,18 @@ export function ReservationDetailSheet({
                 )}
               </div>
               <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  onClick={form.handleSubmit(handleSave)}
+                  disabled={isLoading}
+                >
+                  <SaveIcon className="size-4 mr-2" />
+                  {isLoading ? "Speichern..." : "Speichern"}
+                </Button>
                 {!isNewReservation && reservation && onConvertToRental && (
                   <Button
                     type="button"
-                    variant="secondary"
                     onClick={() => onConvertToRental(reservation)}
                     disabled={isLoading}
                   >
@@ -1176,14 +1184,6 @@ export function ReservationDetailSheet({
                     In Ausleihe umwandeln
                   </Button>
                 )}
-                <Button
-                  type="submit"
-                  onClick={form.handleSubmit(handleSave)}
-                  disabled={isLoading}
-                >
-                  <SaveIcon className="size-4 mr-2" />
-                  {isLoading ? "Speichern..." : "Speichern"}
-                </Button>
               </div>
             </div>
           </SheetFooter>
