@@ -380,7 +380,7 @@ export const reservationsColumnConfig: EntityColumnConfig = {
       sortable: true,
     },
   ],
-  defaultSort: "pickup",
+  defaultSort: "-pickup", // Sort by pickup date, newest/current first
 };
 
 // ============================================================================
