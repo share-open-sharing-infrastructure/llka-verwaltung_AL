@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -43,6 +43,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/use-auth';
+import { useCenterActiveNavItem } from '@/hooks/use-center-active-nav-item';
 import { useQuickFind } from '@/hooks/use-quick-find';
 import { useSequentialMode } from '@/hooks/use-sequential-mode';
 import { useCommandMenu } from '@/hooks/use-command-menu';
@@ -63,34 +64,41 @@ interface MenuTileProps {
 function MenuTile({ icon, label, description, shortcut, onClick, href }: MenuTileProps) {
   const content = (
     <>
-      {/* Icon */}
-      <div className="text-primary group-hover:text-accent-foreground transition-colors mb-2">
-        {icon}
-      </div>
-
-      {/* Label */}
-      <div className="font-semibold text-sm mb-1 group-hover:text-accent-foreground transition-colors">
-        {label}
+      {/* Icon + label + keyboard shortcut on one row */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="text-primary group-hover:text-accent-foreground transition-colors shrink-0">
+            {icon}
+          </div>
+          {/*
+            Wraps instead of truncating (WCAG 1.4.4): the panel is viewport-sized
+            while the title is rem-sized, so at 200% text zoom truncation is
+            guaranteed and the full label would only be reachable via a hover
+            title — not by keyboard, not on touch. The tile is flex-col and h-full,
+            so a two-line title keeps the row's cells at equal height.
+          */}
+          <div className="font-semibold text-sm [overflow-wrap:anywhere] group-hover:text-accent-foreground transition-colors">
+            {label}
+          </div>
+        </div>
+        {shortcut && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            {shortcut.keys.map((key, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground/60 transition-colors" />}
+                <kbd className="px-1.5 py-0.5 text-[12px] font-mono font-medium bg-muted group-hover:bg-accent-foreground/10 group-hover:text-accent-foreground transition-colors rounded">
+                  {key}
+                </kbd>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Description */}
-      <div className="text-xs text-muted-foreground group-hover:text-accent-foreground/80 transition-colors mb-2 hyphens-auto">
+      <div className="text-xs text-muted-foreground group-hover:text-accent-foreground/80 transition-colors hyphens-auto">
         {description}
       </div>
-
-      {/* Keyboard Shortcut */}
-      {shortcut && (
-        <div className="flex items-center gap-0.5 mt-auto">
-          {shortcut.keys.map((key, idx) => (
-            <React.Fragment key={idx}>
-              {idx > 0 && <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground/60 transition-colors" />}
-              <kbd className="px-1.5 py-0.5 text-[12px] font-mono font-medium bg-muted group-hover:bg-accent-foreground/10 group-hover:text-accent-foreground transition-colors rounded">
-                {key}
-              </kbd>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
     </>
   );
 
@@ -183,6 +191,11 @@ export function Navbar() {
   const { settings, getFileUrl } = useSettings();
   const logoUrl = getFileUrl(settings.logo);
   const userEmail = user?.email || 'admin@leihlokal.de';
+  const navScrollRef = useRef<HTMLDivElement>(null);
+
+  // Centres the active item on route change/resize, pulls a focused item into
+  // view, and maintains data-fade-end for the strip's overflow fade.
+  useCenterActiveNavItem(navScrollRef);
 
   // Detect OS for keyboard shortcut display
   const [isMac, setIsMac] = useState(false);
@@ -213,7 +226,17 @@ export function Navbar() {
         </div>
 
         {/* Main Navigation */}
-        <div className="ml-8 flex flex-1 items-center space-x-1">
+        {/*
+          py-2: overflow-x-auto computes overflow-y to auto as well, so without
+          vertical breathing room the focus ring's horizontal segments get clipped.
+          pr-2: trailing gutter so the last item never touches the date at scroll end.
+          The mask fades the END edge only (as an "there is more" affordance) and only
+          while data-fade-end is true — a permanent fade would wash out the last item.
+        */}
+        <div
+          ref={navScrollRef}
+          className="ml-8 flex min-w-0 flex-1 items-center space-x-1 overflow-x-auto overscroll-x-contain py-2 pr-2 [scrollbar-width:none] data-[fade-end=true]:[mask-image:linear-gradient(to_right,black_calc(100%_-_1.5rem),transparent)] [&::-webkit-scrollbar]:hidden"
+        >
           {navigationItems.map((item) => (
             <NavLink
               key={item.href}
@@ -227,7 +250,7 @@ export function Navbar() {
         </div>
 
         {/* Time and Date */}
-        <div className="flex flex-col items-end mr-4 text-sm">
+        <div className="hidden md:flex flex-col items-end mr-4 text-sm">
           <NavbarDate />
         </div>
 
@@ -245,7 +268,11 @@ export function Navbar() {
             <PopoverContent
               align="end"
               sideOffset={8}
-              className="w-[calc(100vw-2rem)] max-w-[520px] p-0"
+              collisionPadding={8}
+              // @container: the grids below must react to the PANEL width, not the
+              // viewport — the panel hits its 520px cap already at a 552px viewport.
+              // scroll-py-4: keep the focus ring of an edge tile off the scrollport edge.
+              className="@container w-[calc(100vw-2rem)] max-w-[520px] p-0 max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain scroll-py-4"
               role="menu"
               aria-label="Navigations-Menü"
             >
@@ -255,7 +282,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     Mehr Aktionen
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<Search className="h-4 w-4" />}
                       label="Suchen"
@@ -285,7 +312,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     Werkzeuge
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<AlertCircle className="h-4 w-4" />}
                       label="Überfällige Ausleihen"
@@ -322,7 +349,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     System
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<FileText className="h-4 w-4" />}
                       label="Logs"
