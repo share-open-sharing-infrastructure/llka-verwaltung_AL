@@ -88,7 +88,8 @@ export function IdentityPicker() {
               {currentIdentity}
             </Badge>
           ) : (
-            <span className="sr-only sm:not-sr-only">Wer bist du?</span>
+            /* sm:not-sr-only resets white-space to normal — re-assert nowrap above the icon-only breakpoint */
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Wer bist du?</span>
           )}
         </Button>
       </PopoverTrigger>

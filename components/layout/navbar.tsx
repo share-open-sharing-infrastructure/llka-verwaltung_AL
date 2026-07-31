@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -44,6 +43,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/use-auth';
+import { useCenterActiveNavItem } from '@/hooks/use-center-active-nav-item';
 import { useQuickFind } from '@/hooks/use-quick-find';
 import { useSequentialMode } from '@/hooks/use-sequential-mode';
 import { useCommandMenu } from '@/hooks/use-command-menu';
@@ -70,10 +70,14 @@ function MenuTile({ icon, label, description, shortcut, onClick, href }: MenuTil
           <div className="text-primary group-hover:text-accent-foreground transition-colors shrink-0">
             {icon}
           </div>
-          <div
-            className="font-semibold text-sm truncate group-hover:text-accent-foreground transition-colors"
-            title={label}
-          >
+          {/*
+            Wraps instead of truncating (WCAG 1.4.4): the panel is viewport-sized
+            while the title is rem-sized, so at 200% text zoom truncation is
+            guaranteed and the full label would only be reachable via a hover
+            title — not by keyboard, not on touch. The tile is flex-col and h-full,
+            so a two-line title keeps the row's cells at equal height.
+          */}
+          <div className="font-semibold text-sm [overflow-wrap:anywhere] group-hover:text-accent-foreground transition-colors">
             {label}
           </div>
         </div>
@@ -187,30 +191,17 @@ export function Navbar() {
   const { settings, getFileUrl } = useSettings();
   const logoUrl = getFileUrl(settings.logo);
   const userEmail = user?.email || 'admin@leihlokal.de';
-  const pathname = usePathname();
   const navScrollRef = useRef<HTMLDivElement>(null);
+
+  // Centres the active item on route change/resize, pulls a focused item into
+  // view, and maintains data-fade-end for the strip's overflow fade.
+  useCenterActiveNavItem(navScrollRef);
 
   // Detect OS for keyboard shortcut display
   const [isMac, setIsMac] = useState(false);
   useEffect(() => {
     setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
   }, []);
-
-  // Centre the active nav item within the (potentially) scrollable strip.
-  // Measured via bounding rects rather than offsetLeft: the strip is not a
-  // positioned element, so offsetLeft would resolve against the fixed <nav>
-  // and include the logo/padding to its left.
-  useEffect(() => {
-    const container = navScrollRef.current;
-    const el = container?.querySelector<HTMLElement>('a[data-active="true"]');
-    if (!container || !el) return;
-    const offsetInStrip =
-      el.getBoundingClientRect().left - container.getBoundingClientRect().left;
-    const target =
-      container.scrollLeft + offsetInStrip - (container.clientWidth - el.offsetWidth) / 2;
-    const max = container.scrollWidth - container.clientWidth;
-    container.scrollLeft = Math.max(0, Math.min(target, max));
-  }, [pathname]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b-2 border-primary bg-background">
@@ -235,9 +226,16 @@ export function Navbar() {
         </div>
 
         {/* Main Navigation */}
+        {/*
+          py-2: overflow-x-auto computes overflow-y to auto as well, so without
+          vertical breathing room the focus ring's horizontal segments get clipped.
+          pr-2: trailing gutter so the last item never touches the date at scroll end.
+          The mask fades the END edge only (as an "there is more" affordance) and only
+          while data-fade-end is true — a permanent fade would wash out the last item.
+        */}
         <div
           ref={navScrollRef}
-          className="ml-8 flex min-w-0 flex-1 items-center space-x-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="ml-8 flex min-w-0 flex-1 items-center space-x-1 overflow-x-auto overscroll-x-contain py-2 pr-2 [scrollbar-width:none] data-[fade-end=true]:[mask-image:linear-gradient(to_right,black_calc(100%_-_1.5rem),transparent)] [&::-webkit-scrollbar]:hidden"
         >
           {navigationItems.map((item) => (
             <NavLink
@@ -271,7 +269,10 @@ export function Navbar() {
               align="end"
               sideOffset={8}
               collisionPadding={8}
-              className="w-[calc(100vw-2rem)] max-w-[520px] p-0 max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain"
+              // @container: the grids below must react to the PANEL width, not the
+              // viewport — the panel hits its 520px cap already at a 552px viewport.
+              // scroll-py-4: keep the focus ring of an edge tile off the scrollport edge.
+              className="@container w-[calc(100vw-2rem)] max-w-[520px] p-0 max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain scroll-py-4"
               role="menu"
               aria-label="Navigations-Menü"
             >
@@ -281,7 +282,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     Mehr Aktionen
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<Search className="h-4 w-4" />}
                       label="Suchen"
@@ -311,7 +312,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     Werkzeuge
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<AlertCircle className="h-4 w-4" />}
                       label="Überfällige Ausleihen"
@@ -348,7 +349,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     System
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<FileText className="h-4 w-4" />}
                       label="Logs"
