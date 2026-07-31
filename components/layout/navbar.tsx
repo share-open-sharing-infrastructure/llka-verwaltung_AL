@@ -64,34 +64,37 @@ interface MenuTileProps {
 function MenuTile({ icon, label, description, shortcut, onClick, href }: MenuTileProps) {
   const content = (
     <>
-      {/* Icon */}
-      <div className="text-primary group-hover:text-accent-foreground transition-colors mb-2">
-        {icon}
-      </div>
-
-      {/* Label */}
-      <div className="font-semibold text-sm mb-1 group-hover:text-accent-foreground transition-colors">
-        {label}
+      {/* Icon + label + keyboard shortcut on one row */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="text-primary group-hover:text-accent-foreground transition-colors shrink-0">
+            {icon}
+          </div>
+          <div
+            className="font-semibold text-sm truncate group-hover:text-accent-foreground transition-colors"
+            title={label}
+          >
+            {label}
+          </div>
+        </div>
+        {shortcut && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            {shortcut.keys.map((key, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground/60 transition-colors" />}
+                <kbd className="px-1.5 py-0.5 text-[12px] font-mono font-medium bg-muted group-hover:bg-accent-foreground/10 group-hover:text-accent-foreground transition-colors rounded">
+                  {key}
+                </kbd>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Description */}
-      <div className="text-xs text-muted-foreground group-hover:text-accent-foreground/80 transition-colors mb-2 hyphens-auto">
+      <div className="text-xs text-muted-foreground group-hover:text-accent-foreground/80 transition-colors hyphens-auto">
         {description}
       </div>
-
-      {/* Keyboard Shortcut */}
-      {shortcut && (
-        <div className="flex items-center gap-0.5 mt-auto">
-          {shortcut.keys.map((key, idx) => (
-            <React.Fragment key={idx}>
-              {idx > 0 && <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground/60 transition-colors" />}
-              <kbd className="px-1.5 py-0.5 text-[12px] font-mono font-medium bg-muted group-hover:bg-accent-foreground/10 group-hover:text-accent-foreground transition-colors rounded">
-                {key}
-              </kbd>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
     </>
   );
 
@@ -278,7 +281,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     Mehr Aktionen
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<Search className="h-4 w-4" />}
                       label="Suchen"
@@ -308,7 +311,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     Werkzeuge
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<AlertCircle className="h-4 w-4" />}
                       label="Überfällige Ausleihen"
@@ -345,7 +348,7 @@ export function Navbar() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
                     System
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <MenuTile
                       icon={<FileText className="h-4 w-4" />}
                       label="Logs"
