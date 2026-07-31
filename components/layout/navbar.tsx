@@ -267,7 +267,8 @@ export function Navbar() {
             <PopoverContent
               align="end"
               sideOffset={8}
-              className="w-[calc(100vw-2rem)] max-w-[520px] p-0"
+              collisionPadding={8}
+              className="w-[calc(100vw-2rem)] max-w-[520px] p-0 max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain"
               role="menu"
               aria-label="Navigations-Menü"
             >
