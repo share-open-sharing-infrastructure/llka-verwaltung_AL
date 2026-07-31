@@ -88,7 +88,7 @@ export function IdentityPicker() {
               {currentIdentity}
             </Badge>
           ) : (
-            <span>Wer bist du?</span>
+            <span className="sr-only sm:not-sr-only">Wer bist du?</span>
           )}
         </Button>
       </PopoverTrigger>

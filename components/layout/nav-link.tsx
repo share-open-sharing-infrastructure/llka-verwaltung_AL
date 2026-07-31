@@ -35,7 +35,7 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
           title={disabledTitle || `${label} ist deaktiviert`}
         >
           <Icon className="flex-shrink-0 h-4 w-4" />
-          {!collapsed && <span>{label}</span>}
+          {!collapsed && <span className="sr-only sm:not-sr-only">{label}</span>}
         </span>
       );
     }
@@ -55,7 +55,7 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
         data-active={isActive}
       >
         <Icon className={cn('flex-shrink-0', isActive ? 'h-4 w-4' : 'h-4 w-4')} />
-        {!collapsed && <span>{label}</span>}
+        {!collapsed && <span className="sr-only sm:not-sr-only">{label}</span>}
       </Link>
     );
   }

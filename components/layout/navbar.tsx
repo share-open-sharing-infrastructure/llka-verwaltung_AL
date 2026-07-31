@@ -193,12 +193,18 @@ export function Navbar() {
     setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
   }, []);
 
-  // Scroll the active nav item into view within the (potentially) scrollable strip
+  // Centre the active nav item within the (potentially) scrollable strip.
+  // Measured via bounding rects rather than offsetLeft: the strip is not a
+  // positioned element, so offsetLeft would resolve against the fixed <nav>
+  // and include the logo/padding to its left.
   useEffect(() => {
     const container = navScrollRef.current;
     const el = container?.querySelector<HTMLElement>('a[data-active="true"]');
     if (!container || !el) return;
-    const target = el.offsetLeft - (container.clientWidth - el.offsetWidth) / 2;
+    const offsetInStrip =
+      el.getBoundingClientRect().left - container.getBoundingClientRect().left;
+    const target =
+      container.scrollLeft + offsetInStrip - (container.clientWidth - el.offsetWidth) / 2;
     const max = container.scrollWidth - container.clientWidth;
     container.scrollLeft = Math.max(0, Math.min(target, max));
   }, [pathname]);
