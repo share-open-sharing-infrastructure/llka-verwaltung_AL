@@ -28,7 +28,7 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
       return (
         <span
           className={cn(
-            'flex items-center gap-2 px-4 py-2 font-medium transition-colors border cursor-not-allowed',
+            'flex items-center gap-2 px-4 py-2 font-medium transition-colors border cursor-not-allowed shrink-0 whitespace-nowrap',
             'border-transparent text-muted-foreground/50 text-base',
             collapsed && 'justify-center'
           )}
@@ -45,13 +45,14 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
         ref={ref}
         href={href}
         className={cn(
-          'flex items-center gap-2 px-4 py-2 font-medium transition-colors border',
+          'flex items-center gap-2 px-4 py-2 font-medium transition-colors border shrink-0 whitespace-nowrap',
           isActive
             ? 'border-primary bg-primary/90 text-white text-base'
             : 'border-transparent text-foreground/80 hover:text-foreground hover:bg-muted/50 text-base',
           collapsed && 'justify-center'
         )}
         title={collapsed ? label : undefined}
+        data-active={isActive}
       >
         <Icon className={cn('flex-shrink-0', isActive ? 'h-4 w-4' : 'h-4 w-4')} />
         {!collapsed && <span>{label}</span>}

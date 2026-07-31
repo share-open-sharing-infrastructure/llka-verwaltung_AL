@@ -4,9 +4,10 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -183,12 +184,24 @@ export function Navbar() {
   const { settings, getFileUrl } = useSettings();
   const logoUrl = getFileUrl(settings.logo);
   const userEmail = user?.email || 'admin@leihlokal.de';
+  const pathname = usePathname();
+  const navScrollRef = useRef<HTMLDivElement>(null);
 
   // Detect OS for keyboard shortcut display
   const [isMac, setIsMac] = useState(false);
   useEffect(() => {
     setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
   }, []);
+
+  // Scroll the active nav item into view within the (potentially) scrollable strip
+  useEffect(() => {
+    const container = navScrollRef.current;
+    const el = container?.querySelector<HTMLElement>('a[data-active="true"]');
+    if (!container || !el) return;
+    const target = el.offsetLeft - (container.clientWidth - el.offsetWidth) / 2;
+    const max = container.scrollWidth - container.clientWidth;
+    container.scrollLeft = Math.max(0, Math.min(target, max));
+  }, [pathname]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b-2 border-primary bg-background">
@@ -213,7 +226,10 @@ export function Navbar() {
         </div>
 
         {/* Main Navigation */}
-        <div className="ml-8 flex flex-1 items-center space-x-1">
+        <div
+          ref={navScrollRef}
+          className="ml-8 flex min-w-0 flex-1 items-center space-x-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {navigationItems.map((item) => (
             <NavLink
               key={item.href}
@@ -227,7 +243,7 @@ export function Navbar() {
         </div>
 
         {/* Time and Date */}
-        <div className="flex flex-col items-end mr-4 text-sm">
+        <div className="hidden md:flex flex-col items-end mr-4 text-sm">
           <NavbarDate />
         </div>
 
