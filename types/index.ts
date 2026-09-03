@@ -175,6 +175,9 @@ export interface Customer extends BaseRecord {
   /** Street address */
   street?: string;
 
+  /** House number */
+  house_number?: string;
+
   /** Postal code */
   postal_code?: string;
 
@@ -229,6 +232,7 @@ export interface CustomerFormData {
   email?: string;
   phone?: string;
   street?: string;
+  house_number?: string;
   postal_code?: string;
   city?: string;
   registered_on: Date;
@@ -486,6 +490,9 @@ export interface Reservation extends BaseRecord {
 
   /** Item ID references */
   items: string[];
+
+  /** Number of copies requested per item ID (defaults to 1 if absent) */
+  requested_copies?: Record<string, number>;
 
   /** Pickup date/time */
   pickup: string;
@@ -773,7 +780,8 @@ export const DEFAULT_SETTINGS: Omit<Settings, keyof BaseRecord> = {
   reservations_enabled: true,
   setup_complete: false,
   opening_hours: [
-    ['sun', '11:00', '15:00'],
+    ['wed', '17:00', '21:00'],
+    ['sat', '11:00', '15:00'],
   ],
 };
 

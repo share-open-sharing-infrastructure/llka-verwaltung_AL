@@ -28,12 +28,12 @@ interface DayConfig {
 
 type WeekConfig = Record<string, DayConfig>
 
-function hoursToWeekConfig(hours: [string, string, string][]): WeekConfig {
+function hoursToWeekConfig(hours: [string, string, string][] | null | undefined): WeekConfig {
   const config: WeekConfig = {}
   for (const { key } of WEEKDAYS) {
     config[key] = { enabled: false, open: "09:00", close: "17:00" }
   }
-  for (const [day, open, close] of hours) {
+  for (const [day, open, close] of Array.isArray(hours) ? hours : []) {
     if (config[day]) {
       config[day] = { enabled: true, open, close }
     }

@@ -318,6 +318,7 @@ export default function ReservationsPage() {
       id: "", // Empty ID indicates new rental
       customer: "", // Will be set by customer_iid
       items: reservation.items,
+      requested_copies: reservation.requested_copies || {},
       deposit: 0, // Will be calculated from items
       deposit_back: 0,
       rented_on: new Date().toISOString(),

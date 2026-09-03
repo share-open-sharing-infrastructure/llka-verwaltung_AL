@@ -38,7 +38,7 @@ const chartConfig = {
     color: '#f9b4be', // Green
   },
   totalItems: {
-    label: 'Anzahl Gegenstände',
+    label: 'Neue Gegenstände',
     color: '#620c24', // Light blue
   },
 } satisfies ChartConfig;
@@ -150,7 +150,7 @@ export function StatsChart({ stats, loading }: StatsChartProps) {
               activeDot={{ r: 5 }}
             />
 
-            {/* Total Items - Blue */}
+            {/* New Items - Blue */}
             <Line
               type="monotone"
               dataKey="totalItems"
