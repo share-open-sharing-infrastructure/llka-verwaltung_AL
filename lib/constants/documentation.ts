@@ -181,6 +181,7 @@ Ordne den Artikel einer oder mehreren Kategorien zu.
 - **Freizeit**: Sport, Camping, Hobby
 - **Heimwerken**: Werkzeuge und Baugeräte
 - **Sonstige**: Alles andere
+- **Fahrrad**: Fahrräder
 
 ### Kaution (Pfand)
 Der Kautionsbetrag in Euro, den Kunden bei Ausleihe hinterlegen. Die Gesamtkaution einer Ausleihe wird automatisch aus allen Artikeln berechnet.

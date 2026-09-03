@@ -15,6 +15,7 @@ export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   [ItemCategory.Leisure]: 'Freizeit',
   [ItemCategory.DIY]: 'Heimwerken',
   [ItemCategory.Other]: 'Sonstige',
+  [ItemCategory.Bike]: 'Fahrrad',
 };
 
 /**
@@ -28,6 +29,7 @@ export const GERMAN_CATEGORIES = {
   LEISURE: 'Freizeit',
   DIY: 'Heimwerken',
   OTHER: 'Sonstige',
+  BIKE: 'Fahrrad'
 } as const;
 
 /**
@@ -46,6 +48,7 @@ export const CATEGORY_OPTIONS = [
   { value: GERMAN_CATEGORIES.LEISURE, label: GERMAN_CATEGORIES.LEISURE },
   { value: GERMAN_CATEGORIES.DIY, label: GERMAN_CATEGORIES.DIY },
   { value: GERMAN_CATEGORIES.OTHER, label: GERMAN_CATEGORIES.OTHER },
+  { value: GERMAN_CATEGORIES.BIKE, label: GERMAN_CATEGORIES.BIKE },
 ];
 
 /**

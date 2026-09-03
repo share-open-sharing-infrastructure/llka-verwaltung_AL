@@ -24,6 +24,7 @@ export enum ItemCategory {
   Leisure = 'leisure',
   DIY = 'diy',
   Other = 'other',
+  Bike = 'bike',
 }
 
 /**
@@ -36,7 +37,8 @@ export type GermanCategory =
   | 'Kinder'
   | 'Freizeit'
   | 'Heimwerken'
-  | 'Sonstige';
+  | 'Sonstige'
+  | 'Fahrrad';
 
 /**
  * Item status values
