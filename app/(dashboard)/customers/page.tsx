@@ -13,6 +13,7 @@ import { SortableHeader, type SortDirection } from '@/components/table/sortable-
 import { ColumnSelector } from '@/components/table/column-selector';
 import { EmptyState } from '@/components/table/empty-state';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { CustomerDetailSheet } from '@/components/detail-sheets/customer-detail-sheet';
 import { collections } from '@/lib/pocketbase/client';
 import { useFilters } from '@/hooks/use-filters';
@@ -428,6 +429,15 @@ export default function CustomersPage() {
                 )
               )}
               <span>{customer.firstname} {customer.lastname}</span>
+              {customer.source === 'self_service' && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs shrink-0"
+                  title="Selbstregistriert – Ausweis bei der ersten Abholung prüfen"
+                >
+                  Selbstreg.
+                </Badge>
+              )}
             </div>
           </td>
         );
