@@ -49,11 +49,14 @@ import { useHelpCollapsed } from '@/hooks/use-help-collapsed';
 
 // Validation schema
 const customerSchema = z.object({
-  iid: z.number().int().min(1, 'ID muss mindestens 1 sein'),
+  // 0 means "let the backend allocate it", which is what new customers use.
+  iid: z.number().int().min(0, 'ID darf nicht negativ sein'),
   firstname: z.string().min(1, 'Vorname ist erforderlich'),
   lastname: z.string().min(1, 'Nachname ist erforderlich'),
   // Optional at the schema level so legacy customers without email/phone
   // can still be opened for editing. If provided, email must be valid.
+  // New customers must have one – enforced in handleSave, which knows whether
+  // this is a create or an edit.
   email: z
     .string()
     .email('Ungültige E-Mail-Adresse')
@@ -106,7 +109,7 @@ export function CustomerDetailSheet({
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
-      iid: 1,
+      iid: 0,
       firstname: '',
       lastname: '',
       email: '',
@@ -149,79 +152,42 @@ export function CustomerDetailSheet({
       form.reset(formData);
       setIsEditMode(false);
     } else if (customer && !customer.id) {
-      // Partial customer data (e.g., from reservation) - pre-fill what we have
-      const fetchNextIid = async () => {
-        try {
-          const result = await collections.customers().getList<Customer>(1, 1, {
-            sort: '-iid',
-          });
-          const nextIid = result.items.length > 0 ? result.items[0].iid + 1 : 1;
-
-          form.reset({
-            iid: nextIid,
-            firstname: customer.firstname || '',
-            lastname: customer.lastname || '',
-            email: customer.email || '',
-            phone: customer.phone || '',
-            street: customer.street || '',
-            house_number: customer.house_number || '',
-            postal_code: customer.postal_code || '',
-            city: customer.city || '',
-            registered_on: dateToLocalString(new Date()),
-            renewed_on: '',
-            newsletter: false,
-            remark: '',
-            highlight_color: '',
-          });
-          setIsEditMode(true);
-        } catch (err) {
-          console.error('Error fetching next IID:', err);
-        }
-      };
-      fetchNextIid();
+      // Partial customer data (e.g., from reservation) - pre-fill what we have.
+      // iid stays 0: the backend allocates it inside the insert transaction.
+      form.reset({
+        iid: 0,
+        firstname: customer.firstname || '',
+        lastname: customer.lastname || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        street: customer.street || '',
+        house_number: customer.house_number || '',
+        postal_code: customer.postal_code || '',
+        city: customer.city || '',
+        registered_on: dateToLocalString(new Date()),
+        renewed_on: '',
+        newsletter: false,
+        remark: '',
+        highlight_color: '',
+      });
+      setIsEditMode(true);
     } else if (isNewCustomer) {
-      // Fetch next available IID for new customers
-      const fetchNextIid = async () => {
-        try {
-          const lastCustomer = await collections.customers().getFirstListItem<Customer>('', { sort: '-iid' });
-          const nextIid = (lastCustomer?.iid || 0) + 1;
-          form.reset({
-            iid: nextIid,
-            firstname: '',
-            lastname: '',
-            email: '',
-            phone: '',
-            street: '',
-            house_number: '',
-            postal_code: '',
-            city: '',
-            registered_on: dateToLocalString(new Date()),
-            renewed_on: '',
-            newsletter: false,
-            remark: '',
-            highlight_color: '',
-          });
-        } catch (err) {
-          // If no customers exist yet, start with 1
-          form.reset({
-            iid: 1,
-            firstname: '',
-            lastname: '',
-            email: '',
-            phone: '',
-            street: '',
-            house_number: '',
-            postal_code: '',
-            city: '',
-            registered_on: dateToLocalString(new Date()),
-            renewed_on: '',
-            newsletter: false,
-            remark: '',
-            highlight_color: '',
-          });
-        }
-      };
-      fetchNextIid();
+      form.reset({
+        iid: 0,
+        firstname: '',
+        lastname: '',
+        email: '',
+        phone: '',
+        street: '',
+        house_number: '',
+        postal_code: '',
+        city: '',
+        registered_on: dateToLocalString(new Date()),
+        renewed_on: '',
+        newsletter: false,
+        remark: '',
+        highlight_color: '',
+      });
       setIsEditMode(true);
     }
   }, [customer, isNewCustomer, form]);
@@ -261,10 +227,22 @@ export function CustomerDetailSheet({
   };
 
   const handleSave = async (data: CustomerFormValues) => {
+    // Email is the identity key for self-service signup and for linking
+    // reservations, so new records must have one. Existing records may not –
+    // legacy customers predate the requirement and must stay editable.
+    if (isNewCustomer && !data.email?.trim()) {
+      form.setError('email', {
+        message: 'E-Mail ist für neue Nutzer:innen erforderlich',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const formData: Partial<Customer> = {
-        iid: data.iid,
+        // Omitted when creating: the backend allocates the next free number
+        // transactionally. Sending one computed here would race.
+        ...(isNewCustomer ? {} : { iid: data.iid }),
         firstname: data.firstname,
         lastname: data.lastname,
         email: data.email,
@@ -286,7 +264,7 @@ export function CustomerDetailSheet({
         toast.success('Nutzer:in erfolgreich erstellt');
         // Reset form to defaults before closing to prevent stale data on next open
         form.reset({
-          iid: 1,
+          iid: 0,
           firstname: '',
           lastname: '',
           email: '',
@@ -479,6 +457,25 @@ export function CustomerDetailSheet({
             </div>
           )}
 
+          {/* Self-registered: nobody has checked this person's ID yet */}
+          {!isNewCustomer && !isEditMode && customer?.source === 'self_service' && (
+            <div className="px-6 mb-6">
+              <div className="rounded-lg p-4 border-l-4 bg-amber-50 dark:bg-amber-950/20 border-amber-500">
+                <div className="text-base font-semibold mb-1">Selbstregistriert</div>
+                <p className="text-sm">
+                  Diese Person hat ihre Daten bei der Reservierung selbst eingegeben.
+                  Bitte bei der ersten Abholung den Ausweis prüfen und die Angaben bestätigen.
+                </p>
+                {customer.consented_on && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Leihbedingungen akzeptiert am {formatDate(customer.consented_on)}
+                    {customer.consent_version ? ` (Fassung ${customer.consent_version})` : ''}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Important Alert - Highlight Color & Remark */}
           {!isNewCustomer && !isEditMode && (customer?.highlight_color || customer?.remark) && (
             <div className="px-6 mb-6">
@@ -531,13 +528,20 @@ export function CustomerDetailSheet({
                   <div className="space-y-3">
                     {/* ID on its own line */}
                     <div>
-                      <Label htmlFor="iid">ID *</Label>
+                      <Label htmlFor="iid">ID {isNewCustomer ? '' : '*'}</Label>
                       <Input
                         id="iid"
                         type="number"
+                        disabled={isNewCustomer}
+                        placeholder={isNewCustomer ? 'Wird automatisch vergeben' : undefined}
                         {...form.register('iid', { valueAsNumber: true })}
                         className="mt-1.5"
                       />
+                      {isNewCustomer && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Die Nutzernummer wird beim Speichern automatisch vergeben.
+                        </p>
+                      )}
                       {form.formState.errors.iid && (
                         <p className="text-sm text-destructive mt-1">
                           {form.formState.errors.iid.message}

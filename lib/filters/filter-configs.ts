@@ -50,7 +50,9 @@ export interface EntityFilterConfig {
 // ============================================================================
 
 export const customersFilterConfig: EntityFilterConfig = {
-  searchFields: ['firstname', 'lastname', 'iid'],
+  // Email is included because it is now the key reservations are matched on,
+  // so staff need to be able to look someone up by it.
+  searchFields: ['firstname', 'lastname', 'iid', 'email'],
 
   dateFilters: [
     {
@@ -78,6 +80,17 @@ export const customersFilterConfig: EntityFilterConfig = {
       options: [
         { value: 'true', label: 'Ja' },
         { value: 'false', label: 'Nein' },
+      ],
+    },
+    {
+      id: 'source',
+      label: 'Herkunft',
+      type: 'category',
+      field: 'source',
+      options: [
+        { value: 'self_service', label: 'Selbstregistriert' },
+        { value: 'staff', label: 'Im Laden angelegt' },
+        { value: 'import', label: 'Importiert' },
       ],
     },
     {

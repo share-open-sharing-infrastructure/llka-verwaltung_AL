@@ -88,8 +88,8 @@ export function GlobalCommandMenu() {
 
         // Build filter strings via pb.filter so user input is safely escaped.
         const customerFilter = isNumeric
-          ? pb.filter('firstname ~ {:q} || lastname ~ {:q} || iid = {:iid}', { q: searchTerm, iid: numericIID })
-          : pb.filter('firstname ~ {:q} || lastname ~ {:q}', { q: searchTerm });
+          ? pb.filter('firstname ~ {:q} || lastname ~ {:q} || email ~ {:q} || iid = {:iid}', { q: searchTerm, iid: numericIID })
+          : pb.filter('firstname ~ {:q} || lastname ~ {:q} || email ~ {:q}', { q: searchTerm });
 
         const itemFilter = isNumeric
           ? pb.filter('(name ~ {:q} || brand ~ {:q} || iid = {:iid}) && status != "deleted"', { q: searchTerm, iid: numericIID })

@@ -201,7 +201,23 @@ export interface Customer extends BaseRecord {
 
   /** Highlight color for special attention */
   highlight_color?: HighlightColor;
+
+  /**
+   * How this record came to exist. 'self_service' means the person entered
+   * their own data while reserving and nobody has checked their ID yet.
+   * Empty on records created before this was tracked.
+   */
+  source?: CustomerSource;
+
+  /** When the person accepted the Leihbedingungen (self-service only) */
+  consented_on?: string;
+
+  /** Which version of the Leihbedingungen they accepted */
+  consent_version?: string;
 }
+
+/** Origin of a customer record. '' means legacy/unknown. */
+export type CustomerSource = 'staff' | 'self_service' | 'import' | '';
 
 /**
  * Customer with computed rental statistics (from customer_rentals view)
